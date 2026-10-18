@@ -14,7 +14,7 @@ cd Devine-Shell
 ./install.sh
 ```
 
-The installer detects Arch/CachyOS, Fedora, or Debian/Ubuntu, installs the matching system packages, creates a private Python environment, builds Devine's native modules, and links the shell into your user config. On Arch-based systems it asks before running the full system sync required by pacman. Start Devine with:
+The installer detects Arch/CachyOS, Fedora, or Debian/Ubuntu, installs the matching system packages, creates a private Python environment, builds Devine's native modules, and links the shell into your user config. On Arch-based systems it uses `paru` for AUR dependencies when available, otherwise `pacman`, and asks before running the full system sync. Start Devine with:
 
 ```sh
 ~/.local/bin/start-devine

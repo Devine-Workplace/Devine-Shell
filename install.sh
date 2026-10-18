@@ -26,8 +26,13 @@ install_system_dependencies() {
   case " $id $like " in
     *" arch "*|*" cachyos "*|*" endeavouros "*|*" manjaro "*)
       command -v pacman >/dev/null || fail "This looks like an Arch-based system, but pacman is missing."
-      packages=(quickshell cmake ninja gcc pkgconf qt6-base qt6-declarative qt6-shadertools qt6-wayland libqalculate pipewire aubio cava lm_sensors python python-pip)
-      pm=pacman
+      packages=(quickshell cmake ninja gcc pkgconf git qt6-base qt6-declarative qt6-shadertools qt6-wayland libqalculate pipewire aubio cava lm_sensors python python-pip python-pillow)
+      if command -v paru >/dev/null 2>&1; then
+        packages+=(python-materialyoucolor)
+        pm=paru
+      else
+        pm=pacman
+      fi
       ;;
     *" fedora "*|*" rhel "*|*" rocky "*|*" almalinux "*)
       command -v dnf >/dev/null || fail "This looks like a Fedora-based system, but dnf is missing."
@@ -45,6 +50,12 @@ install_system_dependencies() {
   esac
 
   case "$pm" in
+    paru)
+      say "CachyOS/Arch needs a full package sync before installing dependencies. This can update existing system packages too."
+      read -r -p "Run paru -Syu --needed for Devine? [y/N] " answer
+      [[ "$answer" =~ ^[Yy]$ ]] || fail "Cancelled before installing system packages."
+      paru -Syu --needed "${packages[@]}"
+      ;;
     pacman)
       say "CachyOS/Arch needs a full package sync before installing dependencies. This can update existing system packages too."
       read -r -p "Run sudo pacman -Syu --needed for Devine? [y/N] " answer
