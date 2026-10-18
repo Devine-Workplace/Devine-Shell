@@ -66,4 +66,3 @@ endif()
 if("plugin" IN_LIST ENABLE_MODULES)
     add_subdirectory(plugin)
 endif()
-
