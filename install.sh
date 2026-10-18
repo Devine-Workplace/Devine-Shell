@@ -99,9 +99,11 @@ for cmd in qs git cmake ninja c++ pkg-config; do
   command -v "$cmd" >/dev/null 2>&1 || missing=1
 done
 pkg-config --exists Qt6Core libqalculate libpipewire-0.3 aubio || missing=1
+pkg-config --exists Qt6ShaderTools Qt6Qml Qt6Gui Qt6Quick Qt6QuickControls2 Qt6Concurrent Qt6Sql Qt6Network Qt6DBus || missing=1
 if ! pkg-config --exists libcava && ! pkg-config --exists cava; then
   missing=1
 fi
+[[ -f /usr/include/sensors/sensors.h ]] || missing=1
 [[ -n "$python_bin" ]] || missing=1
 if (( missing )); then
   install_system_dependencies
