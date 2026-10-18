@@ -66,3 +66,10 @@ endif()
 if("plugin" IN_LIST ENABLE_MODULES)
     add_subdirectory(plugin)
 endif()
+
+include(FetchContent)
+FetchContent_Declare(m3shapes
+    GIT_REPOSITORY https://github.com/soramanew/m3shapes.git
+    GIT_TAG 32ad9ce328bb77ed349b40a3be10ee9ea610b8ab
+)
+FetchContent_MakeAvailable(m3shapes)
