@@ -1,6 +1,6 @@
 # Devine
 
-Devine is a customized fork of [Caelestia Shell](https://github.com/caelestia-dots/shell) and its [CLI](https://github.com/caelestia-dots/cli), for Hyprland and Quickshell. It keeps and modifies their GPL-licensed source under Devine branding. See [NOTICE.md](NOTICE.md) for credits and license details.
+Devine is a customized fork of [Caelestia Shell](https://github.com/caelestia-dots/shell) and its [CLI](https://github.com/caelestia-dots/cli), for Hyprland and Quickshell. Devine changes began on 2026-10-18. The adapted code is GPL-3.0-only. See [NOTICE.md](NOTICE.md) for credits and license details.
 
 It includes a panel, app launcher, notifications, quick settings, and workspace tools.
 

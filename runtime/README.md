@@ -1,6 +1,6 @@
 # Devine runtime source
 
-This directory contains Devine's locally built QML modules and their build files. The modules are adapted from Caelestia Shell under GPL-3.0-or-later. See `UPSTREAM-LICENSE` and the project `NOTICE.md`.
+This directory contains Devine's locally built QML modules and their build files. The modules are adapted from Caelestia Shell under GPL-3.0-only. See `UPSTREAM-LICENSE` and the project `NOTICE.md`.
 
 Upstream sources:
 
