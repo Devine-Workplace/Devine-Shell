@@ -36,7 +36,7 @@ install_system_dependencies() {
   case " $id $like " in
     *" arch "*|*" cachyos "*|*" endeavouros "*|*" manjaro "*)
       command -v pacman >/dev/null || fail "This looks like an Arch-based system, but pacman is missing."
-      packages=(quickshell cmake ninja gcc pkgconf git qt6-base qt6-declarative qt6-shadertools qt6-wayland libqalculate pipewire aubio cava lm_sensors python python-pip python-pillow)
+      packages=(quickshell cmake ninja gcc pkgconf git qt6-base qt6-declarative qt6-shadertools qt6-wayland libqalculate pipewire aubio cava lm_sensors python python-pip python-pillow ttf-material-symbols-variable)
       if command -v paru >/dev/null 2>&1; then
         packages+=(python-materialyoucolor libcava-git)
         pm=paru
@@ -105,6 +105,22 @@ if ! pkg-config --exists libcava && ! pkg-config --exists cava; then
 fi
 [[ -f /usr/include/sensors/sensors.h ]] || missing=1
 [[ -n "$python_bin" ]] || missing=1
+# Icon names are Material Symbols ligatures. Without the font they render as
+# literal words and can force the bar entries to overlap at smaller resolutions.
+if [[ -r /etc/os-release ]]; then
+  # shellcheck disable=SC1091
+  . /etc/os-release
+  case " ${ID:-} ${ID_LIKE:-} " in
+    *" arch "*|*" cachyos "*|*" endeavouros "*|*" manjaro "*)
+      if ! command -v fc-match >/dev/null 2>&1; then
+        missing=1
+      else
+        fc_match_family="$(fc-match -f '%{family}' 'Material Symbols Rounded' 2>/dev/null || true)"
+        [[ "$fc_match_family" == *"Material Symbols Rounded"* ]] || missing=1
+      fi
+      ;;
+  esac
+fi
 if (( missing )); then
   install_system_dependencies
 fi
