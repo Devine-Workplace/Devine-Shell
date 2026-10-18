@@ -155,8 +155,8 @@ Item {
 
         Image {
             source: SysInfo.osLogo
-            implicitWidth: Tokens.sizes.dashboard.logoSize
-            implicitHeight: implicitWidth
+            width: Tokens.sizes.dashboard.logoSize
+            height: width
             fillMode: Image.PreserveAspectFit
         }
     }
