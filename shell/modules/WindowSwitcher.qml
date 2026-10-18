@@ -68,6 +68,8 @@ Scope {
     property string moveError: ""
     readonly property var monitorGroups: Hypr.monitors.values
     readonly property int desktopHeaderHeight: monitorColumn.implicitHeight + 36
+    readonly property int overviewPanelWidth: 980
+    readonly property int overviewPanelHeight: 680
     function refreshOverview(): void {
         allWindows = Hypr.toplevels.values.filter(w => w.wayland && w.lastIpcObject?.mapped !== false);
         if (overview) {
@@ -404,8 +406,8 @@ Scope {
         Rectangle {
             id: panel
             anchors.centerIn: parent
-            width: root.overview ? Math.min(win.width - 100, Math.max(240, monitorColumn.implicitWidth + 36, root.windows.length ? root.columns * 236 + 36 : 0)) : Math.min(win.width - 100, root.columns * 236 + 36)
-            height: root.overview ? Math.min(win.height - 120, root.desktopHeaderHeight + (root.windows.length ? Math.ceil(root.windows.length / root.columns) * 220 : emptyState.implicitHeight + 16) + 58) : 244
+            width: root.overview ? Math.min(win.width - 100, root.overviewPanelWidth) : Math.min(win.width - 100, root.columns * 236 + 36)
+            height: root.overview ? Math.min(win.height - 120, root.overviewPanelHeight) : 244
             radius: 28
             color: Colours.palette.m3surfaceContainer
             border.width: 1
