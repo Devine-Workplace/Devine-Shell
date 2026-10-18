@@ -23,7 +23,7 @@ Singleton {
         // Do not reject a valid active window just because its list is not ready.
         if (t && (t.workspace?.name.startsWith("special:") || !workspace || t.workspace?.id === workspace.id))
             return t;
-        return Hyprland.toplevels.values.find(window => window.workspace?.id === workspace?.id && window.lastIpcObject?.mapped && window.lastIpcObject?.focusHistoryID === 0) ?? null;
+        return Hyprland.toplevels.values.find(window => Number(window.workspace?.id) === Number(workspace?.id) && window.lastIpcObject?.mapped && Number(window.lastIpcObject?.focusHistoryID) === 0) ?? null;
     }
     readonly property HyprlandWorkspace focusedWorkspace: Hyprland.focusedWorkspace
     readonly property HyprlandMonitor focusedMonitor: Hyprland.focusedMonitor

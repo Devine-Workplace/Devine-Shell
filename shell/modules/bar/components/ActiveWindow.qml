@@ -12,7 +12,8 @@ Item {
     required property Brightness.Monitor monitor
     property color colour: Colours.palette.m3primary
     readonly property string windowTitle: {
-        const title = Hypr.activeToplevel?.title;
+        const active = Hypr.activeToplevel;
+        const title = active?.title || active?.lastIpcObject?.title;
         if (!title) return Tr.trCtx("Desktop", "shown when no window is focused");
         if (Config.bar.activeWindow.compact) {
             const parts = title.split(/\s+[-–—]\s+/);
