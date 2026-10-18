@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if ! command -v caelestia >/dev/null 2>&1; then
+  echo "Devine requires the compatible Caelestia runtime for now. Install it from your trusted package source." >&2
+  exit 127
+fi
+exec caelestia "$@"

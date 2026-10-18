@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+BIN_DIR="$HOME/.local/bin"
+CONFIG_TARGET="$CONFIG_HOME/quickshell/caelestia"
+SCRIPT_TARGET="$DATA_HOME/devine/scripts"
+STAMP="$(date +%Y%m%d-%H%M%S)"
+BACKUP_DIR="$STATE_HOME/devine/backups/$STAMP"
+
+for cmd in caelestia qs git; do
+  command -v "$cmd" >/dev/null || { echo "Missing runtime command: $cmd. Install the Quickshell runtime dependencies first." >&2; exit 1; }
+done
+
+mkdir -p "$(dirname "$CONFIG_TARGET")" "$DATA_HOME/devine" "$BIN_DIR" "$STATE_HOME/devine/backups"
+if [[ -e "$CONFIG_TARGET" || -L "$CONFIG_TARGET" ]]; then
+  if [[ "$(readlink -f "$CONFIG_TARGET" 2>/dev/null || true)" != "$(readlink -f "$ROOT_DIR/shell")" ]]; then
+    mkdir -p "$BACKUP_DIR"
+    mv "$CONFIG_TARGET" "$BACKUP_DIR/quickshell-caelestia"
+    echo "Backed up previous shell config to $BACKUP_DIR"
+  fi
+fi
+if [[ ! -e "$CONFIG_TARGET" ]]; then ln -s "$ROOT_DIR/shell" "$CONFIG_TARGET"; fi
+if [[ -e "$SCRIPT_TARGET" || -L "$SCRIPT_TARGET" ]]; then
+  if [[ "$(readlink -f "$SCRIPT_TARGET" 2>/dev/null || true)" != "$(readlink -f "$ROOT_DIR/scripts")" ]]; then
+    mkdir -p "$BACKUP_DIR"
+    mv "$SCRIPT_TARGET" "$BACKUP_DIR/devine-scripts"
+  fi
+fi
+if [[ ! -e "$SCRIPT_TARGET" ]]; then ln -s "$ROOT_DIR/scripts" "$SCRIPT_TARGET"; fi
+ln -sfn "$ROOT_DIR/scripts/devine" "$BIN_DIR/devine"
+ln -sfn "$ROOT_DIR/scripts/start-devine.sh" "$BIN_DIR/start-devine"
+ln -sfn "$ROOT_DIR/update.sh" "$BIN_DIR/devine-update"
+echo "Devine files installed. Start with: $BIN_DIR/start-devine"

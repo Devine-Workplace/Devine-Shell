@@ -1,0 +1,14 @@
+# Local/editor and build artefacts
+*.swp
+*~
+.cache/
+build/
+.DS_Store
+__pycache__/
+*.py[cod]
+# VM images and credentials must never be published
+vm/
+*.iso
+*.qcow2
+.env
+*.pem
