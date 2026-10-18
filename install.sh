@@ -14,6 +14,16 @@ VENV_DIR="$DATA_HOME/devine/venv"
 say() { printf '\nDevine: %s\n' "$*"; }
 fail() { printf 'Devine: %s\n' "$*" >&2; exit 1; }
 
+install_arch_aur_fallback() {
+  local build_dir
+  command -v makepkg >/dev/null 2>&1 || fail "Cava's development library is missing. Install paru or makepkg, then rerun ./install.sh."
+  build_dir="$(mktemp -d "${TMPDIR:-/tmp}/devine-libcava.XXXXXX")"
+  say "paru is unavailable; building the required libcava-git package with makepkg."
+  git clone --depth 1 https://aur.archlinux.org/libcava-git.git "$build_dir/libcava-git"
+  (cd "$build_dir/libcava-git" && makepkg --syncdeps --install --noconfirm)
+  rm -rf "$build_dir"
+}
+
 install_system_dependencies() {
   local id="" like="" packages=() pm=""
   if [[ -r /etc/os-release ]]; then
@@ -28,7 +38,7 @@ install_system_dependencies() {
       command -v pacman >/dev/null || fail "This looks like an Arch-based system, but pacman is missing."
       packages=(quickshell cmake ninja gcc pkgconf git qt6-base qt6-declarative qt6-shadertools qt6-wayland libqalculate pipewire aubio cava lm_sensors python python-pip python-pillow)
       if command -v paru >/dev/null 2>&1; then
-        packages+=(python-materialyoucolor)
+        packages+=(python-materialyoucolor libcava-git)
         pm=paru
       else
         pm=pacman
@@ -70,6 +80,10 @@ install_system_dependencies() {
       sudo apt-get install -y "${packages[@]}"
       ;;
   esac
+
+  if [[ "$pm" == pacman ]] && ! pkg-config --exists libcava; then
+    install_arch_aur_fallback
+  fi
 }
 
 python_bin=""
@@ -84,6 +98,10 @@ missing=0
 for cmd in qs git cmake ninja c++ pkg-config; do
   command -v "$cmd" >/dev/null 2>&1 || missing=1
 done
+pkg-config --exists Qt6Core libqalculate libpipewire-0.3 aubio || missing=1
+if ! pkg-config --exists libcava && ! pkg-config --exists cava; then
+  missing=1
+fi
 [[ -n "$python_bin" ]] || missing=1
 if (( missing )); then
   install_system_dependencies
