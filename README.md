@@ -1,11 +1,18 @@
 # Devine
 
-A Hyprland shell built with Quickshell.
+Devine is a desktop shell for Hyprland, built with Quickshell. It includes a panel, app launcher, notifications, quick settings, and workspace tools.
 
-Install: `./install.sh`
+Devine builds and runs its own shell modules and command line tools. It does not need the Caelestia package installed. Some source is adapted from Caelestia; see [NOTICE.md](NOTICE.md) and the included licenses.
 
-Start: `~/.local/bin/start-devine`
+## Install
 
-Update: `~/.local/bin/devine-update`
+In a Hyprland session, install Quickshell (`qs`), CMake, Ninja, a C++20 compiler, `pkg-config`, Python 3, Pillow, and `materialyoucolor`. Then run:
 
-Credits and licenses: [NOTICE.md](NOTICE.md)
+```sh
+git clone https://github.com/Devine-Workplace/Devine-Shell.git
+cd Devine-Shell
+./install.sh
+~/.local/bin/start-devine
+```
+
+Update later with `~/.local/bin/devine-update`.
