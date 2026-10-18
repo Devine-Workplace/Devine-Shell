@@ -1,8 +1,8 @@
 # Devine
 
-Devine is a desktop shell for Hyprland, built with Quickshell. It includes a panel, app launcher, notifications, quick settings, and workspace tools.
+Devine is a customized fork of [Caelestia Shell](https://github.com/caelestia-dots/shell) and its [CLI](https://github.com/caelestia-dots/cli), for Hyprland and Quickshell. It keeps and modifies their GPL-licensed source under Devine branding. See [NOTICE.md](NOTICE.md) for credits and license details.
 
-Devine builds and runs its own shell modules and command line tools. It does not need the Caelestia package installed. Some source is adapted from Caelestia; see [NOTICE.md](NOTICE.md) and the included licenses.
+It includes a panel, app launcher, notifications, quick settings, and workspace tools.
 
 ## Install
 
