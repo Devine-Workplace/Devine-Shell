@@ -1,9 +1,13 @@
 pragma ComponentBehavior: Bound
 
+import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import Devine.Config
 import Devine.I18n
+import qs.components.controls
 import qs.modules.nexus.common
+import qs.services
 
 PageBase {
     id: root
@@ -16,6 +20,39 @@ PageBase {
         anchors.top: parent.top
         width: root.cappedWidth
         spacing: Tokens.spacing.extraSmall / 2
+
+        Variants {
+            id: logoVariants
+            model: SysInfo.logoOptions
+
+            MenuItem {
+                required property var modelData
+                text: modelData.name
+                icon: modelData.value === GlobalConfig.general.logo ? "check" : ""
+                activeIcon: "image"
+            }
+        }
+
+        SectionHeader {
+            first: true
+            text: Tr.tr("Branding")
+        }
+
+        SelectRow {
+            first: true
+            last: true
+            label: Tr.tr("Taskbar logo")
+            subtext: Tr.tr("Use the system logo or a distro logo from your icon theme")
+            menuItems: logoVariants.instances
+            active: menuItems.find(item => item.text === (SysInfo.logoOptions.find(option => option.value === GlobalConfig.general.logo)?.name ?? "System logo")) ?? null
+            fallbackText: Tr.tr("System logo")
+            fallbackIcon: "computer"
+            onSelected: item => {
+                const option = SysInfo.logoOptions.find(entry => entry.name === item.text);
+                if (option)
+                    GlobalConfig.general.logo = option.value;
+            }
+        }
 
         // Behaviour
         SectionHeader {

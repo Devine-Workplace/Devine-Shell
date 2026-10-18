@@ -64,7 +64,7 @@ StyledRect {
                 Layout.preferredHeight: 0
                 active: !iconLoader.active
 
-                sourceComponent: SysInfo.isDefaultLogo ? devineLogo : distroIcon
+                sourceComponent: distroIcon
             }
         }
 
@@ -79,7 +79,7 @@ StyledRect {
                 Layout.fillHeight: true
                 active: root.width > Tokens.sizes.lock.largeLogoWidth
 
-                sourceComponent: SysInfo.isDefaultLogo ? devineLogo : distroIcon
+                sourceComponent: distroIcon
             }
 
             ColumnLayout {
@@ -159,21 +159,12 @@ StyledRect {
     }
 
     Component {
-        id: devineLogo
-
-        Logo {
-            width: height
-        }
-    }
-
-    Component {
         id: distroIcon
 
-        ColouredIcon {
+        Image {
+            anchors.fill: parent
             source: SysInfo.osLogo
-            implicitSize: height
-            colour: Colours.palette.m3primary
-            layer.enabled: Config.lock.recolourLogo
+            fillMode: Image.PreserveAspectFit
         }
     }
 

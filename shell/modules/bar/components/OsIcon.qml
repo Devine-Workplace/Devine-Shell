@@ -1,9 +1,7 @@
 import QtQuick
 import Devine.Config
 import qs.components
-import qs.components.effects
 import qs.services
-import qs.utils
 
 Item {
     id: root
@@ -20,28 +18,21 @@ Item {
         }
     }
 
-    Loader {
-        asynchronous: true
+    Image {
         anchors.centerIn: parent
-        sourceComponent: SysInfo.isDefaultLogo ? devineLogo : distroIcon
+        width: Math.min(parent.width, parent.height)
+        height: width
+        source: SysInfo.osLogo
+        fillMode: Image.PreserveAspectFit
+        asynchronous: true
+        mipmap: true
     }
 
-    Component {
-        id: devineLogo
-
-        Logo {
-            implicitWidth: Math.round(Tokens.font.body.large.pointSize * 1.6)
-            implicitHeight: Math.round(Tokens.font.body.large.pointSize * 1.6)
-        }
-    }
-
-    Component {
-        id: distroIcon
-
-        ColouredIcon {
-            source: SysInfo.osLogo
-            implicitSize: Math.round(Tokens.font.body.large.pointSize * 1.2)
-            colour: Colours.palette.m3tertiary
-        }
+    MaterialIcon {
+        anchors.centerIn: parent
+        visible: !SysInfo.osLogo
+        text: "computer"
+        color: Colours.palette.m3onSurface
+        fontStyle: Tokens.font.icon.small
     }
 }

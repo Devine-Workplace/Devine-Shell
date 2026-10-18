@@ -14,8 +14,43 @@ Singleton {
     property string osPrettyName
     property string osId
     property list<string> osIdLike
-    property string osLogo: Qt.resolvedUrl(`${Quickshell.shellDir}/assets/logo.svg`)
-    property bool isDefaultLogo: true
+    property string osLogo
+    property string systemLogo
+    readonly property list<var> distroLogoCandidates: [
+        { name: "Arch Linux", icons: ["archlinux", "distributor-logo-archlinux", "arch"] },
+        { name: "AlmaLinux", icons: ["almalinux", "distributor-logo-almalinux"] },
+        { name: "Alpine Linux", icons: ["alpine", "alpinelinux", "distributor-logo-alpine"] },
+        { name: "CachyOS", icons: ["cachyos", "cachyos-logo", "distributor-logo-cachyos"] },
+        { name: "Debian", icons: ["debian", "distributor-logo-debian"] },
+        { name: "EndeavourOS", icons: ["endeavouros", "distributor-logo-endeavouros"] },
+        { name: "elementary OS", icons: ["elementary", "distributor-logo-elementary"] },
+        { name: "Fedora", icons: ["fedora", "distributor-logo-fedora"] },
+        { name: "Garuda Linux", icons: ["garuda", "garuda-linux", "distributor-logo-garuda"] },
+        { name: "Gentoo", icons: ["gentoo", "distributor-logo-gentoo"] },
+        { name: "Kali Linux", icons: ["kali", "kali-linux", "distributor-logo-kali"] },
+        { name: "Linux Mint", icons: ["linuxmint", "distributor-logo-linuxmint"] },
+        { name: "Manjaro", icons: ["manjaro", "distributor-logo-manjaro"] },
+        { name: "Mageia", icons: ["mageia", "distributor-logo-mageia"] },
+        { name: "MX Linux", icons: ["mx-linux", "mxlinux", "distributor-logo-mx"] },
+        { name: "NixOS", icons: ["nixos", "nix-snowflake", "distributor-logo-nixos"] },
+        { name: "openSUSE", icons: ["opensuse", "distributor-logo-opensuse"] },
+        { name: "Pop!_OS", icons: ["pop-os", "pop", "distributor-logo-pop-os"] },
+        { name: "Rocky Linux", icons: ["rocky", "rocky-linux", "distributor-logo-rocky"] },
+        { name: "Red Hat", icons: ["redhat", "red-hat", "distributor-logo-redhat"] },
+        { name: "Slackware", icons: ["slackware", "distributor-logo-slackware"] },
+        { name: "Solus", icons: ["solus", "distributor-logo-solus"] },
+        { name: "Ubuntu", icons: ["ubuntu", "distributor-logo-ubuntu"] },
+        { name: "Zorin OS", icons: ["zorin", "zorin-os", "distributor-logo-zorin"] },
+        { name: "Void Linux", icons: ["void", "distributor-logo-void"] }
+    ]
+    readonly property list<var> distroLogos: distroLogoCandidates.map(item => {
+        const icon = item.icons.find(name => Quickshell.iconPath(name, true));
+        return icon ? { name: item.name, value: icon, path: Quickshell.iconPath(icon, true) } : null;
+    }).filter(item => item)
+    readonly property list<var> logoOptions: [
+        { name: "System logo", value: "", path: root.systemLogo },
+        ...root.distroLogos
+    ]
 
     property string uptime
     // Uptime trimmed to its two largest components
@@ -46,6 +81,15 @@ Singleton {
         return junk.includes(t.toLowerCase()) ? "" : t;
     }
 
+    function updateLogo(): void {
+        const configured = GlobalConfig.general.logo;
+        if (configured && configured !== "devine") {
+            root.osLogo = Quickshell.iconPath(configured, true) || "file://" + Paths.absolutePath(configured);
+            return;
+        }
+        root.osLogo = root.systemLogo || Quickshell.iconPath(root.osId, true) || Quickshell.iconPath("computer", true);
+    }
+
     FileView {
         id: osRelease
 
@@ -59,24 +103,14 @@ Singleton {
             root.osPrettyName = fd("PRETTY_NAME");
             root.osId = fd("ID");
             root.osIdLike = fd("ID_LIKE").split(" ");
-
-            const logo = Quickshell.iconPath(fd("LOGO"), true);
-            if (GlobalConfig.general.logo === "devine") {
-                root.osLogo = Qt.resolvedUrl(`${Quickshell.shellDir}/assets/logo.svg`);
-                root.isDefaultLogo = true;
-            } else if (GlobalConfig.general.logo) {
-                root.osLogo = Quickshell.iconPath(GlobalConfig.general.logo, true) || "file://" + Paths.absolutePath(GlobalConfig.general.logo);
-                root.isDefaultLogo = false;
-            } else if (logo) {
-                root.osLogo = logo;
-                root.isDefaultLogo = false;
-            }
+            root.systemLogo = Quickshell.iconPath(fd("LOGO"), true);
+            root.updateLogo();
         }
     }
 
     Connections {
         function onLogoChanged(): void {
-            osRelease.reload();
+            root.updateLogo();
         }
 
         target: GlobalConfig.general

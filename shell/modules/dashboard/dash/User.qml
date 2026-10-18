@@ -146,30 +146,18 @@ Item {
 
         Loader {
             anchors.centerIn: parent
-            sourceComponent: SysInfo.isDefaultLogo ? devineLogo : osLogo
+            sourceComponent: osLogo
         }
     }
 
     Component {
         id: osLogo
 
-        ColouredIcon {
-            id: icon
-
+        Image {
             source: SysInfo.osLogo
-            implicitSize: Tokens.sizes.dashboard.logoSize
-            colour: Colours.palette.m3onPrimaryContainer
-        }
-    }
-
-    Component {
-        id: devineLogo
-
-        Logo {
             implicitWidth: Tokens.sizes.dashboard.logoSize
-            implicitHeight: Tokens.sizes.dashboard.logoSize
-            topColour: Colours.palette.m3primary
-            bottomColour: Colours.palette.m3onPrimaryContainer
+            implicitHeight: implicitWidth
+            fillMode: Image.PreserveAspectFit
         }
     }
 
