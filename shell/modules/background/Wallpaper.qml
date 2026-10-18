@@ -1,8 +1,8 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Caelestia.Config
-import Caelestia.I18n
+import Devine.Config
+import Devine.I18n
 import qs.components
 import qs.components.filedialog
 import qs.components.images

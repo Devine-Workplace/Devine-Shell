@@ -1,8 +1,8 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
-import Caelestia.I18n
-import Caelestia.Config
+import Devine.I18n
+import Devine.Config
 import qs.components
 import qs.services
 StyledRect {

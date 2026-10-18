@@ -1,0 +1,41 @@
+qml_module(devine-config
+    URI Devine.Config
+    INCLUDE_PREFIX config
+    SOURCES
+        common.cpp
+        rootnodes.cpp
+        configattached.cpp
+        appearanceconfig.cpp
+        borderconfig.cpp
+        font.cpp
+        fontbuilder.cpp
+        tokensattached.cpp
+        anim.cpp
+        enums.hpp
+        backgroundconfig.hpp
+        barconfig.hpp
+        dashboardconfig.hpp
+        generalconfig.hpp
+        launcherconfig.hpp
+        lockconfig.hpp
+        nexusconfig.hpp
+        notifsconfig.hpp
+        osdconfig.hpp
+        serviceconfig.hpp
+        sessionconfig.hpp
+        sidebarconfig.hpp
+        userpaths.hpp
+        utilitiesconfig.hpp
+        tokens.hpp
+    LIBRARIES
+        Qt::Quick
+        Qt::QuickControls2
+    DEPENDENCIES
+        Devine.Settings
+)
+target_link_libraries(devine-config PUBLIC
+    Qt::Gui
+    devine-util
+    devine-core
+    devine-settings
+)

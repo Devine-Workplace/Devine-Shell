@@ -2,8 +2,8 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
-import Caelestia.Config
-import Caelestia.I18n
+import Devine.Config
+import Devine.I18n
 import qs.components
 import qs.services
 import qs.modules.nexus

@@ -5,8 +5,8 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Hyprland
 import M3Shapes
-import Caelestia.Components
-import Caelestia.Config
+import Devine.Components
+import Devine.Config
 import qs.components
 import qs.components.images
 import qs.components.effects

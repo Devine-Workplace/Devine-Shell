@@ -79,7 +79,7 @@ Singleton {
     Process {
         id: commandProc
 
-        // The command owns the transition: `caelestia record` blocks on slurp for
+        // The command owns the transition: `devine record` blocks on slurp for
         // region captures, and waits for the recorder to finalise the file when
         // stopping. Reconcile once it has actually finished.
         onExited: checkProc.running = true // qmllint disable signal-handler-parameters

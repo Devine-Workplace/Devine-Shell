@@ -4,9 +4,9 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-import Caelestia
-import Caelestia.Config
-import Caelestia.I18n
+import Devine
+import Devine.Config
+import Devine.I18n
 import qs.components
 import qs.components.effects
 import qs.services
@@ -119,7 +119,7 @@ MouseArea {
     }
 
     function save(): void {
-        const tmpfile = Qt.resolvedUrl(`/tmp/caelestia-picker-${Quickshell.processId}-${Date.now()}.png`);
+        const tmpfile = Qt.resolvedUrl(`/tmp/devine-picker-${Quickshell.processId}-${Date.now()}.png`);
         // Capture the target geometry, not an in-between animated highlight.
         const crop = Qt.rect(Math.ceil(Math.min(sx, ex)), Math.ceil(Math.min(sy, ey)), Math.floor(Math.abs(ex - sx)), Math.floor(Math.abs(ey - sy)));
         if (crop.width < 2 || crop.height < 2) return;

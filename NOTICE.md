@@ -1,5 +1,10 @@
-# Upstream attribution
+# Credits and licenses
 
-Devine Shell is a customized desktop configuration based on **Caelestia Shell** by the Caelestia Dots contributors: <https://github.com/caelestia-dots/shell>.
+Devine is a customized and rebranded fork of Caelestia Shell and CLI by the Caelestia Dots contributors:
 
-The inherited source is licensed under GPL-3.0-or-later; see [LICENSE](LICENSE). Devine preserves required upstream notices and uses the upstream runtime/CLI for compatibility. Devine's layout, workspace overview, screenshot integration, theme matching, and helper tooling are the project-specific adaptations.
+- https://github.com/caelestia-dots/shell
+- https://github.com/caelestia-dots/cli
+
+Devine's shell source, native modules, and command line tools include adapted upstream GPL-3.0-or-later code. The original license files are included in this repository and preserved beside the adapted runtime and CLI source.
+
+Devine is maintained as its own project. It builds its own native QML modules and uses its own `devine` command. It still requires Quickshell and Hyprland.

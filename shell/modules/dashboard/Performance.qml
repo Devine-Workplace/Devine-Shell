@@ -2,9 +2,9 @@ import "performance"
 import QtQuick
 import QtQuick.Layouts
 import Quickshell.Services.UPower
-import Caelestia.Config
-import Caelestia.I18n
-import Caelestia.Services
+import Devine.Config
+import Devine.I18n
+import Devine.Services
 import qs.components
 import qs.services
 

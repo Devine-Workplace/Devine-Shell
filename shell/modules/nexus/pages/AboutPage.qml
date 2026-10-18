@@ -1,9 +1,9 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell.Io
-import Caelestia
-import Caelestia.Config
-import Caelestia.I18n
+import Devine
+import Devine.Config
+import Devine.I18n
 import qs.components
 import qs.services
 import qs.utils
@@ -42,7 +42,7 @@ PageBase {
             command: [Paths.devineCommand, "--version"]
             stdout: StdioCollector {
                 onStreamFinished: {
-                    const m = text.match(/(?:devine|caelestia)-cli\S*\s+(\d+(?:\.\d+)*)/);
+                    const m = text.match(/Devine\s+(\d+(?:\.\d+)*)/);
                     root.cliVersion = m ? m[1] : "";
                 }
             }

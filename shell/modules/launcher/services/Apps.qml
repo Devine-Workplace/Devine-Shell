@@ -1,8 +1,8 @@
 pragma Singleton
 
 import Quickshell
-import Caelestia.Config
-import Caelestia.Models
+import Devine.Config
+import Devine.Models
 import qs.utils
 
 Searcher {

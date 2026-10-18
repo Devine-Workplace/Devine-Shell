@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import sys
+root=Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(root/"cli"/"src"))
 import configparser,json,re,subprocess as sp,os,signal
-from caelestia.utils.theme import gen_replace,gen_sequences,apply_terms
-from caelestia.utils.paths import templates_dir
+from devine.utils.theme import gen_replace,gen_sequences,apply_terms
+from devine.utils.paths import templates_dir
 home=Path.home();cfg=home/'.config';base=Path(__file__).resolve().parent.parent/"shell"
 source=(base/'services/Colours.qml').read_text()
 col={k:v.lower() for k,v in re.findall(r'property color m3(\w+): "#([0-9a-fA-F]+)"',source)}
 col.update({k:v.lower() for k,v in re.findall(r'property color (term\d+): "#([0-9a-fA-F]+)"',source)})
 try:
- data=json.loads((home/'.local/state/caelestia/scheme.json').read_text());col.update({k:v.lstrip('#').lower() for k,v in data['colours'].items() if isinstance(v,str) and re.fullmatch(r'#?[0-9a-fA-F]{6}',v)})
+ data=json.loads((home/'.local/state/devine/scheme.json').read_text());col.update({k:v.lstrip('#').lower() for k,v in data['colours'].items() if isinstance(v,str) and re.fullmatch(r'#?[0-9a-fA-F]{6}',v)})
 except (OSError,ValueError,KeyError):pass
 
 for alias,role in {'red':'error','maroon':'term9','green':'success','yellow':'term3','peach':'tertiary','teal':'term6','sky':'term14','sapphire':'term4','blue':'term4','lavender':'term12','mauve':'primary','klink':'primary','kvisited':'tertiary','knegative':'error','kpositive':'success','kneutral':'tertiary'}.items():
@@ -32,7 +35,7 @@ def saveini(path,c):
 # Terminal persistent palette; preserve opacity, padding and all other settings.
 kitty='\n'.join([f'foreground #{col["onSurface"]}',f'background #{col["surface"]}',f'cursor #{col["primary"]}',f'cursor_text_color #{col["onPrimary"]}',f'selection_background #{col["primaryContainer"]}',f'selection_foreground #{col["onPrimaryContainer"]}',f'url_color #{col["primary"]}',f'active_border_color #{col["primary"]}',f'inactive_border_color #{col["outlineVariant"]}']+[f'color{i} #{col[f"term{i}"]}' for i in range(16)])+'\n'
 write(cfg/'kitty/themes/devine.conf',kitty)
-p=cfg/'kitty/kitty.conf';s=p.read_text();s=re.sub(r'^include\s+themes/(?:noctalia|caelestia|devine)\.conf\s*$', 'include themes/devine.conf',s,flags=re.M);write(p,s)
+p=cfg/'kitty/kitty.conf';s=p.read_text();s=re.sub(r'^include\s+themes/(?:noctalia|devine|devine)\.conf\s*$', 'include themes/devine.conf',s,flags=re.M);write(p,s)
 # Alacritty: replace its existing explicit colour sections while retaining behaviour/font settings.
 p=cfg/'alacritty/alacritty.toml'
 if p.exists():

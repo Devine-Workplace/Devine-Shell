@@ -1,8 +1,8 @@
 import QtQuick
 import QtQuick.Layouts
-import Caelestia.Config
-import Caelestia.I18n
-import Caelestia.Services
+import Devine.Config
+import Devine.I18n
+import Devine.Services
 import qs.components
 import qs.components.controls
 import qs.services

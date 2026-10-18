@@ -2,9 +2,9 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
-import Caelestia.Blobs
-import Caelestia.Config
-import Caelestia.I18n
+import Devine.Blobs
+import Devine.Config
+import Devine.I18n
 import qs.components
 import qs.components.controls
 import qs.components.effects

@@ -1,6 +1,6 @@
 import QtQuick
-import Caelestia.Blobs
-import Caelestia.Config
+import Devine.Blobs
+import Devine.Config
 import qs.components
 import qs.services
 

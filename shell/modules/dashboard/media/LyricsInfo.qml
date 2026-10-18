@@ -1,10 +1,10 @@
 import QtQuick
 import QtQuick.Layouts
-import Caelestia
-import Caelestia.Blobs
-import Caelestia.Config
-import Caelestia.I18n
-import Caelestia.Services
+import Devine
+import Devine.Blobs
+import Devine.Config
+import Devine.I18n
+import Devine.Services
 import qs.components
 import qs.services
 

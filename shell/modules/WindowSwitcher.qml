@@ -4,7 +4,7 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Wayland
-import Caelestia.Config
+import Devine.Config
 import qs.components
 import qs.components.images
 import qs.components.containers
@@ -341,7 +341,7 @@ Scope {
             width: 190; height: 140
             Drag.active: root.dragging
             Drag.source: dragGhost
-            Drag.keys: ["caelestia-window"]
+            Drag.keys: ["devine-window"]
             Drag.hotSpot.x: width / 2
             Drag.hotSpot.y: height / 2
         }
@@ -508,7 +508,7 @@ Scope {
                                     DropArea {
                                         id: desktopDrop
                                         anchors.fill: parent
-                                        keys: ["caelestia-window"]
+                                        keys: ["devine-window"]
                                         enabled: root.dragging && root.dragWindow !== null && (root.dragWindow.workspace?.id ?? root.dragWindow.lastIpcObject?.workspace?.id) !== desktopChip.modelData.id
                                         onEntered: { returnMorph.stop(); root.returnOffsetX = 0; root.returnOffsetY = 0; root.hoverDropTarget = desktopChip; }
                                         onExited: if (root.hoverDropTarget === desktopChip) {

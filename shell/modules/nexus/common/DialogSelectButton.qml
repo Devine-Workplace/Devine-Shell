@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Caelestia.Config
+import Devine.Config
 import qs.components
 import qs.components.containers
 import qs.services

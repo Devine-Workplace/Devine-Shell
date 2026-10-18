@@ -1,7 +1,7 @@
 import QtQuick
 import Quickshell
-import Caelestia.Config
-import Caelestia.Models
+import Devine.Config
+import Devine.Models
 import qs.components
 import qs.components.effects
 import qs.components.images

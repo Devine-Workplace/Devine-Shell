@@ -4,7 +4,7 @@ import QtQuick.Controls as Controls
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-import Caelestia.Config
+import Devine.Config
 import qs.components
 import qs.components.images
 import qs.services
@@ -79,7 +79,7 @@ Item {
         width: previewList.width; height: 76
         Drag.active: root.dragging
         Drag.source: dragGhost
-        Drag.keys: ["caelestia-window"]
+        Drag.keys: ["devine-window"]
         Drag.hotSpot.x: pointerOffset.x
         Drag.hotSpot.y: pointerOffset.y
     }
@@ -267,7 +267,7 @@ Item {
                     DropArea {
                         id: desktopDrop
                         anchors.fill: parent
-                        keys: ["caelestia-window"]
+                        keys: ["devine-window"]
                         enabled: root.dragging && root.dragWindow !== null && (root.dragWindow.workspace?.id ?? root.dragWindow.lastIpcObject?.workspace?.id) !== entry.modelData.id
                         onEntered: { returnMorph.stop(); root.returnOffsetX = 0; root.returnOffsetY = 0; root.hoverDropTarget = entry; }
                         onExited: if (root.hoverDropTarget === entry) {
@@ -295,7 +295,7 @@ Item {
                     anchors.fill: parent
                     onClicked: {
                         root.popouts.hasCurrent = false;
-                        Quickshell.execDetached(["qs", "-c", "caelestia", "ipc", "call", "switcher", "createDesktop", root.screen.name]);
+                        Quickshell.execDetached(["qs", "-c", "devine", "ipc", "call", "switcher", "createDesktop", root.screen.name]);
                     }
                 }
             }
@@ -310,7 +310,7 @@ Item {
                     anchors.fill: parent
                     onClicked: {
                         root.popouts.hasCurrent = false;
-                        Quickshell.execDetached(["qs", "-c", "caelestia", "ipc", "call", "switcher", "overview"]);
+                        Quickshell.execDetached(["qs", "-c", "devine", "ipc", "call", "switcher", "overview"]);
                     }
                 }
             }

@@ -1,8 +1,2 @@
-Devine design notes
-
-- The bar and widgets are horizontal and anchored at the bottom.
-- Workspace and app previews use the same morphing surface, with window icons arranged two per row.
-- Empty desktop previews stay collapsed; hovered previews update from live Hyprland events.
-- Hover arbitration keeps the workspace overview clear of quick utilities and OSD popouts.
-- Screenshot selection uses the shell picker and Swash.
-- Runtime configuration ID and QML module names retain Caelestia compatibility for now; visible product naming is Devine.
+Devine's installed configuration ID is `devine` and its native QML modules use the `Devine.*` namespace.
+The project builds its own compatible runtime modules and CLI. Quickshell and Hyprland remain platform dependencies.

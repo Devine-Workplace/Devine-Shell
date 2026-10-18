@@ -1,7 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Caelestia
+import Devine
 import qs.components.misc
 import qs.services
 import qs.modules.nexus
@@ -185,7 +185,7 @@ Scope {
     LoggingCategory {
         id: lc
 
-        name: "caelestia.qml.shortcuts"
+        name: "devine.qml.shortcuts"
         defaultLogLevel: LoggingCategory.Info
     }
 }

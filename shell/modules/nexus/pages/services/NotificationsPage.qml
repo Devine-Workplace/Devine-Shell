@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
-import Caelestia.Config
-import Caelestia.I18n
+import Devine.Config
+import Devine.I18n
 import qs.components.controls
 import qs.modules.nexus.common
 

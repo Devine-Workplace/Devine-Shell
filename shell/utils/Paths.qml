@@ -2,8 +2,8 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
-import Caelestia
-import Caelestia.Config
+import Devine
+import Devine.Config
 
 Singleton {
     id: root
@@ -15,16 +15,16 @@ Singleton {
     readonly property string devineCommand: `${home}/.local/bin/devine`
     readonly property string scripts: `${Quickshell.env("XDG_DATA_HOME") || `${home}/.local/share`}/devine/scripts`
 
-    readonly property string data: `${Quickshell.env("XDG_DATA_HOME") || `${home}/.local/share`}/caelestia`
-    readonly property string state: `${Quickshell.env("XDG_STATE_HOME") || `${home}/.local/state`}/caelestia`
-    readonly property string cache: `${Quickshell.env("XDG_CACHE_HOME") || `${home}/.cache`}/caelestia`
-    readonly property string config: `${Quickshell.env("XDG_CONFIG_HOME") || `${home}/.config`}/caelestia`
+    readonly property string data: `${Quickshell.env("XDG_DATA_HOME") || `${home}/.local/share`}/devine`
+    readonly property string state: `${Quickshell.env("XDG_STATE_HOME") || `${home}/.local/state`}/devine`
+    readonly property string cache: `${Quickshell.env("XDG_CACHE_HOME") || `${home}/.cache`}/devine`
+    readonly property string config: `${Quickshell.env("XDG_CONFIG_HOME") || `${home}/.config`}/devine`
 
     readonly property string imagecache: `${cache}/imagecache`
     readonly property string notifimagecache: `${imagecache}/notifs`
-    readonly property string wallsdir: Quickshell.env("CAELESTIA_WALLPAPERS_DIR") || absolutePath(GlobalConfig.paths.wallpaperDir)
-    readonly property string recsdir: Quickshell.env("CAELESTIA_RECORDINGS_DIR") || `${videos}/Recordings`
-    readonly property string libdir: Quickshell.env("CAELESTIA_LIB_DIR") || "/usr/lib/caelestia"
+    readonly property string wallsdir: Quickshell.env("DEVINE_WALLPAPERS_DIR") || absolutePath(GlobalConfig.paths.wallpaperDir)
+    readonly property string recsdir: Quickshell.env("DEVINE_RECORDINGS_DIR") || `${videos}/Recordings`
+    readonly property string libdir: Quickshell.env("DEVINE_LIB_DIR") || "/usr/lib/devine"
 
     function toLocalFile(path: url): string {
         path = Qt.resolvedUrl(path);

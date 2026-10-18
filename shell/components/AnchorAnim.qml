@@ -1,5 +1,5 @@
 import QtQuick
-import Caelestia.Config
+import Devine.Config
 
 AnchorAnimation {
     enum Type {

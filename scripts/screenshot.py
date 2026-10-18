@@ -5,7 +5,7 @@ script_dir = Path(__file__).resolve().parent
 mode=sys.argv[1] if len(sys.argv)>1 else 'region'
 cmd=['grim']
 if mode=='region':
-    sys.exit(s.run(['qs','-c','caelestia','ipc','call','picker','openFreeze']).returncode)
+    sys.exit(s.run(['qs','-c','devine','ipc','call','picker','openFreeze']).returncode)
 else:
     monitors=json.loads(s.check_output(['hyprctl','monitors','-j']))
     focused=next((m for m in monitors if m.get('focused')),None)

@@ -6,8 +6,8 @@ import QtQuick.Effects
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
-import Caelestia.Blobs
-import Caelestia.Config
+import Devine.Blobs
+import Devine.Config
 import qs.components
 import qs.components.containers
 import qs.services

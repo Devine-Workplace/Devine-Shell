@@ -5,8 +5,8 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Services.UPower
-import Caelestia.Config
-import Caelestia.Services
+import Devine.Config
+import Devine.Services
 import qs.services
 
 Scope {

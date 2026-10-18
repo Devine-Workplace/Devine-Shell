@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
-if ! command -v caelestia >/dev/null 2>&1; then
-  echo "Devine requires the compatible Caelestia runtime for now. Install it from your trusted package source." >&2
-  exit 127
-fi
-exec caelestia "$@"
+SOURCE="$(readlink -f -- "${BASH_SOURCE[0]}")"
+ROOT_DIR="$(cd -- "$(dirname -- "$SOURCE")/.." && pwd -P)"
+QML_DIR="$HOME/.local/lib/qt6/qml"
+export QML2_IMPORT_PATH="$QML_DIR${QML2_IMPORT_PATH:+:$QML2_IMPORT_PATH}"
+export DEVINE_LIB_DIR="$HOME/.local/lib/devine"
+export PYTHONPATH="$ROOT_DIR/cli/src${PYTHONPATH:+:$PYTHONPATH}"
+exec python3 -m devine "$@"

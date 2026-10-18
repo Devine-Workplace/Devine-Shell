@@ -2,9 +2,9 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Templates
-import Caelestia
-import Caelestia.Components
-import Caelestia.Config
+import Devine
+import Devine.Components
+import Devine.Config
 import qs.components
 import qs.services
 

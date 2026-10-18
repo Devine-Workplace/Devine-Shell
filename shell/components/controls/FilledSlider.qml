@@ -1,7 +1,7 @@
 import "../effects"
 import QtQuick
 import QtQuick.Templates
-import Caelestia.Config
+import Devine.Config
 import qs.components
 import qs.services
 

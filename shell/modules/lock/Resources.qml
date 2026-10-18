@@ -3,9 +3,9 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import M3Shapes
-import Caelestia.Config
-import Caelestia.I18n
-import Caelestia.Services
+import Devine.Config
+import Devine.I18n
+import Devine.Services
 import qs.components
 import qs.components.effects
 import qs.components.widgets

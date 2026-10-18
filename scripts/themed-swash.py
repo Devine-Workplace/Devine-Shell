@@ -6,7 +6,7 @@ base=Path(__file__).resolve().parent.parent/"shell"
 source=(base/'services/Colours.qml').read_text()
 colours={k:v for k,v in re.findall(r'property color m3(\w+): "(#[0-9a-fA-F]+)"',source)}
 try:
-    scheme=json.loads((home/'.local/state/caelestia/scheme.json').read_text())
+    scheme=json.loads((home/'.local/state/devine/scheme.json').read_text())
     colours.update({k:'#'+v.lstrip('#') for k,v in scheme['colours'].items() if isinstance(v,str) and re.fullmatch(r'#?[0-9a-fA-F]{6,8}',v)})
 except (OSError,ValueError,KeyError): pass
 cfg=home/'.config/devine/swash-theme'

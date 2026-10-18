@@ -1,5 +1,5 @@
 import QtQuick
-import Caelestia.Config
+import Devine.Config
 
 ColorAnimation {
     duration: Tokens.anim.durations.expressiveSlowEffects
