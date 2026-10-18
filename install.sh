@@ -9,12 +9,92 @@ CONFIG_TARGET="$CONFIG_HOME/quickshell/devine"
 SCRIPT_TARGET="$DATA_HOME/devine/scripts"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 BACKUP_DIR="$STATE_HOME/devine/backups/$STAMP"
+VENV_DIR="$DATA_HOME/devine/venv"
 
-for cmd in qs git cmake ninja c++ pkg-config python3; do
-  command -v "$cmd" >/dev/null || { echo "Missing build or runtime tool: $cmd" >&2; exit 1; }
+say() { printf '\nDevine: %s\n' "$*"; }
+fail() { printf 'Devine: %s\n' "$*" >&2; exit 1; }
+
+install_system_dependencies() {
+  local id="" like="" packages=() pm=""
+  if [[ -r /etc/os-release ]]; then
+    # shellcheck disable=SC1091
+    . /etc/os-release
+    id="${ID:-}"
+    like="${ID_LIKE:-}"
+  fi
+
+  case " $id $like " in
+    *" arch "*|*" cachyos "*|*" endeavouros "*|*" manjaro "*)
+      command -v pacman >/dev/null || fail "This looks like an Arch-based system, but pacman is missing."
+      packages=(quickshell cmake ninja gcc pkgconf qt6-base qt6-declarative qt6-shadertools qt6-wayland libqalculate pipewire aubio cava lm_sensors python python-pip)
+      pm=pacman
+      ;;
+    *" fedora "*|*" rhel "*|*" rocky "*|*" almalinux "*)
+      command -v dnf >/dev/null || fail "This looks like a Fedora-based system, but dnf is missing."
+      packages=(quickshell cmake ninja-build gcc-c++ pkgconf-pkg-config qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtshadertools-devel qt6-qtwayland-devel libqalculate-devel pipewire-devel aubio-devel cava-devel lm_sensors-devel python3 python3-pip)
+      pm=dnf
+      ;;
+    *" debian "*|*" ubuntu "*|*" linuxmint "*|*" pop "*)
+      command -v apt-get >/dev/null || fail "This looks like a Debian-based system, but apt-get is missing."
+      packages=(quickshell cmake ninja-build g++ pkg-config qt6-base-dev qt6-declarative-dev qt6-shadertools-dev qt6-wayland-dev libqalculate-dev libpipewire-0.3-dev libaubio-dev libcava-dev libsensors-dev python3 python3-venv python3-pip)
+      pm=apt
+      ;;
+    *)
+      fail "Automatic dependency installation is not set up for '${id:-this Linux distro}'. Supported package managers are pacman (Arch/CachyOS), dnf (Fedora), and apt (Debian/Ubuntu). Install Quickshell, Qt 6.9+ development files, CMake, Ninja, a C++20 compiler, pkg-config, the Qalculate/PipeWire/Aubio/Cava/sensors development libraries, and Python 3.13+ with venv, then rerun ./install.sh."
+      ;;
+  esac
+
+  case "$pm" in
+    pacman)
+      say "CachyOS/Arch needs a full package sync before installing dependencies. This can update existing system packages too."
+      read -r -p "Run sudo pacman -Syu --needed for Devine? [y/N] " answer
+      [[ "$answer" =~ ^[Yy]$ ]] || fail "Cancelled before installing system packages."
+      sudo pacman -Syu --needed "${packages[@]}"
+      ;;
+    dnf)
+      sudo dnf install -y "${packages[@]}"
+      ;;
+    apt)
+      sudo apt-get update
+      sudo apt-get install -y "${packages[@]}"
+      ;;
+  esac
+}
+
+python_bin=""
+for candidate in python3.14 python3.13 python3; do
+  if command -v "$candidate" >/dev/null 2>&1 && "$candidate" -c 'import sys; raise SystemExit(sys.version_info < (3, 13))'; then
+    python_bin="$(command -v "$candidate")"
+    break
+  fi
 done
 
-python3 -c 'import PIL, materialyoucolor' 2>/dev/null || { echo "Devine needs Python packages pillow and materialyoucolor." >&2; exit 1; }
+missing=0
+for cmd in qs git cmake ninja c++ pkg-config; do
+  command -v "$cmd" >/dev/null 2>&1 || missing=1
+done
+[[ -n "$python_bin" ]] || missing=1
+if (( missing )); then
+  install_system_dependencies
+fi
+
+for cmd in qs git cmake ninja c++ pkg-config; do
+  command -v "$cmd" >/dev/null 2>&1 || fail "Required command '$cmd' is still missing after dependency installation. Check the package-manager error above."
+done
+python_bin=""
+for candidate in python3.14 python3.13 python3; do
+  if command -v "$candidate" >/dev/null 2>&1 && "$candidate" -c 'import sys; raise SystemExit(sys.version_info < (3, 13))'; then
+    python_bin="$(command -v "$candidate")"
+    break
+  fi
+done
+[[ -n "$python_bin" ]] || fail "Devine's CLI needs Python 3.13 or newer. Install it and rerun ./install.sh."
+
+mkdir -p "$DATA_HOME/devine"
+if [[ ! -x "$VENV_DIR/bin/python" ]]; then
+  "$python_bin" -m venv "$VENV_DIR" || fail "Could not create the Python environment. Ensure your distro's Python venv package is installed."
+fi
+"$VENV_DIR/bin/python" -m pip install --disable-pip-version-check --upgrade pillow materialyoucolor
 
 "$ROOT_DIR/build-runtime.sh"
 mkdir -p "$(dirname "$CONFIG_TARGET")" "$DATA_HOME/devine" "$BIN_DIR" "$STATE_HOME/devine/backups"

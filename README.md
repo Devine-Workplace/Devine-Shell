@@ -6,12 +6,17 @@ It includes a panel, app launcher, notifications, quick settings, and workspace 
 
 ## Install
 
-In a Hyprland session, install Quickshell (`qs`), CMake, Ninja, a C++20 compiler, `pkg-config`, Python 3, Pillow, and `materialyoucolor`. Then run:
+Clone Devine and run its installer from a Hyprland session:
 
 ```sh
 git clone https://github.com/Devine-Workplace/Devine-Shell.git
 cd Devine-Shell
 ./install.sh
+```
+
+The installer detects Arch/CachyOS, Fedora, or Debian/Ubuntu, installs the matching system packages, creates a private Python environment, builds Devine's native modules, and links the shell into your user config. On Arch-based systems it asks before running the full system sync required by pacman. Start Devine with:
+
+```sh
 ~/.local/bin/start-devine
 ```
 
