@@ -135,6 +135,12 @@ class LauncherConfig : public settings::ObjectNode {
                 { u"description"_s, mark(u"Configure the shell"_s) },
                 { u"command"_s, QStringList{ u"devine"_s, u"shell"_s, u"nexus"_s, u"open"_s } },
             }),
+            vmap({
+                { u"name"_s, markCtx(u"Files"_s, u"launcher action"_s) },
+                { u"icon"_s, u"folder"_s },
+                { u"description"_s, mark(u"Browse files and folders"_s) },
+                { u"command"_s, QStringList{ u"devine"_s, u"shell"_s, u"files"_s, u"open"_s } },
+            }),
         }))
 };
 

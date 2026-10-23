@@ -62,6 +62,10 @@ Region {
     }
 
     R {
+        panel: root.panels.capsLockIndicator
+    }
+
+    R {
         panel: root.panels.utilities
         y: root.win.height - root.bar.implicitHeight + root.borderThickness - height
         height: panel.height * (1 - root.panels.utilities.offsetScale) + root.borderThickness

@@ -22,6 +22,7 @@ Rectangle {
     implicitHeight: 32
     radius: 16
     color: Colours.palette.m3surfaceContainerHigh
+    Behavior on implicitWidth { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
     function showMenu(): void {
         // The native popout morph starts at the bar's lower edge. Keep this
         // anchor on that same edge so it grows directly out of this button.
@@ -44,14 +45,15 @@ Rectangle {
     }
     StyledText {
         id: label
-        x: 34; anchors.verticalCenter: parent.verticalCenter
-        width: Math.min(108, implicitWidth)
+        anchors { left: parent.left; leftMargin: 34; right: count.left; rightMargin: 4; verticalCenter: parent.verticalCenter }
         text: root.desktopLabel
         color: Colours.palette.m3onSurface
         elide: Text.ElideRight
         font: Tokens.font.body.small
+        Behavior on width { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
     }
     StyledText {
+        id: count
         anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
         text: String(root.desktops.length)
         color: Colours.palette.m3onSurfaceVariant

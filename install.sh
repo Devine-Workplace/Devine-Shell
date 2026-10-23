@@ -36,7 +36,7 @@ install_system_dependencies() {
   case " $id $like " in
     *" arch "*|*" cachyos "*|*" endeavouros "*|*" manjaro "*)
       command -v pacman >/dev/null || fail "This looks like an Arch-based system, but pacman is missing."
-      packages=(quickshell cmake ninja gcc pkgconf git qt6-base qt6-declarative qt6-shadertools qt6-wayland libqalculate pipewire aubio cava lm_sensors python python-pip python-pillow ttf-material-symbols-variable)
+      packages=(quickshell cmake ninja gcc pkgconf git qt6-base qt6-declarative qt6-shadertools qt6-wayland libqalculate pipewire aubio cava lm_sensors slurp python python-pip python-pillow ttf-material-symbols-variable)
       if command -v paru >/dev/null 2>&1; then
         packages+=(python-materialyoucolor libcava-git)
         pm=paru
@@ -46,12 +46,12 @@ install_system_dependencies() {
       ;;
     *" fedora "*|*" rhel "*|*" rocky "*|*" almalinux "*)
       command -v dnf >/dev/null || fail "This looks like a Fedora-based system, but dnf is missing."
-      packages=(quickshell cmake ninja-build gcc-c++ pkgconf-pkg-config qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtshadertools-devel qt6-qtwayland-devel libqalculate-devel pipewire-devel aubio-devel cava-devel lm_sensors-devel python3 python3-pip)
+      packages=(quickshell cmake ninja-build gcc-c++ pkgconf-pkg-config qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtshadertools-devel qt6-qtwayland-devel libqalculate-devel pipewire-devel aubio-devel cava-devel lm_sensors-devel slurp python3 python3-pip)
       pm=dnf
       ;;
     *" debian "*|*" ubuntu "*|*" linuxmint "*|*" pop "*)
       command -v apt-get >/dev/null || fail "This looks like a Debian-based system, but apt-get is missing."
-      packages=(quickshell cmake ninja-build g++ pkg-config qt6-base-dev qt6-declarative-dev qt6-shadertools-dev qt6-wayland-dev libqalculate-dev libpipewire-0.3-dev libaubio-dev libcava-dev libsensors-dev python3 python3-venv python3-pip)
+      packages=(quickshell cmake ninja-build g++ pkg-config qt6-base-dev qt6-declarative-dev qt6-shadertools-dev qt6-wayland-dev libqalculate-dev libpipewire-0.3-dev libaubio-dev libcava-dev libsensors-dev slurp python3 python3-venv python3-pip)
       pm=apt
       ;;
     *)
@@ -160,6 +160,46 @@ if [[ -e "$SCRIPT_TARGET" || -L "$SCRIPT_TARGET" ]]; then
 fi
 if [[ ! -e "$SCRIPT_TARGET" ]]; then ln -s "$ROOT_DIR/scripts" "$SCRIPT_TARGET"; fi
 ln -sfn "$ROOT_DIR/scripts/devine" "$BIN_DIR/devine"
+ln -sfn "$ROOT_DIR/scripts/devine-share-picker" "$BIN_DIR/devine-share-picker"
 ln -sfn "$ROOT_DIR/scripts/start-devine.sh" "$BIN_DIR/start-devine"
 ln -sfn "$ROOT_DIR/update.sh" "$BIN_DIR/devine-update"
+
+if [[ -x /usr/lib/xdg-desktop-portal-hyprland ]]; then
+  XDPH_CONFIG="$CONFIG_HOME/hypr/xdph.conf"
+  mkdir -p "$(dirname -- "$XDPH_CONFIG")"
+  if [[ -e "$XDPH_CONFIG" && ! -e "$XDPH_CONFIG.devine-backup" ]]; then
+    cp -p -- "$XDPH_CONFIG" "$XDPH_CONFIG.devine-backup"
+  fi
+  python3 - "$XDPH_CONFIG" "$BIN_DIR/devine-share-picker" <<'PY'
+import os
+import re
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+picker = sys.argv[2]
+text = path.read_text() if path.exists() else ""
+pattern = re.compile(r"(?ms)(^[ \t]*screencopy[ \t]*\{[^\n]*\n)(.*?)(^[ \t]*\})")
+match = pattern.search(text)
+if match:
+    body = re.sub(r"(?m)^[ \t]*custom_picker_binary\s*=.*(?:\n|$)", "", match.group(2))
+    replacement = match.group(1) + body
+    if not replacement.endswith("\n"):
+        replacement += "\n"
+    replacement += f"    custom_picker_binary = {picker}\n" + match.group(3)
+    text = text[:match.start()] + replacement + text[match.end():]
+else:
+    if text and not text.endswith("\n"):
+        text += "\n"
+    text += f"\nscreencopy {{\n    custom_picker_binary = {picker}\n}}\n"
+
+temporary = path.with_name(path.name + ".devine-tmp")
+temporary.write_text(text)
+if path.exists():
+    os.chmod(temporary, path.stat().st_mode & 0o777)
+temporary.replace(path)
+PY
+  say "Configured Devine's screen-share picker. Restart xdg-desktop-portal-hyprland after any active screen share ends."
+fi
+
 printf 'Devine installed. Launch with %s/start-devine\n' "$BIN_DIR"

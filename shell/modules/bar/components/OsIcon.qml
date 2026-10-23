@@ -2,6 +2,7 @@ import QtQuick
 import Devine.Config
 import qs.components
 import qs.services
+import qs.utils
 
 Item {
     id: root

@@ -54,11 +54,20 @@ Item {
         }
         Popout {
             name: "workspaceapp"
-            sourceComponent: StyledText {
-                text: root.appTooltip
-                color: Colours.palette.m3primary
-                font: Tokens.font.body.small
-                elide: Text.ElideRight
+            sourceComponent: StyledRect {
+                implicitWidth: appTooltipText.implicitWidth + Tokens.padding.large * 2
+                implicitHeight: appTooltipText.implicitHeight + Tokens.padding.small * 2
+                radius: Tokens.rounding.full
+                color: Colours.palette.m3primaryContainer
+
+                StyledText {
+                    id: appTooltipText
+                    anchors.centerIn: parent
+                    text: root.appTooltip
+                    color: Colours.palette.m3onPrimaryContainer
+                    font: Tokens.font.body.small
+                    elide: Text.ElideRight
+                }
             }
         }
 

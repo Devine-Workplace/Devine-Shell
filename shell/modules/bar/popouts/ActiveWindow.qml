@@ -76,15 +76,15 @@ Item {
 
         ClippingWrapperRectangle {
             id: previewFrame
-            color: Colours.tPalette.m3surfaceContainer
+            color: Qt.rgba(Colours.palette.m3surfaceContainerLowest.r, Colours.palette.m3surfaceContainerLowest.g, Colours.palette.m3surfaceContainerLowest.b, 1)
             border.color: Colours.palette.m3outlineVariant
             border.width: 1
             radius: Tokens.rounding.large
             ScreencopyView {
                 captureSource: Hypr.activeToplevel?.wayland ?? null
                 live: visible
-                constraintSize.width: Tokens.sizes.bar.windowPreviewSize
-                constraintSize.height: Tokens.sizes.bar.windowPreviewSize
+                constraintSize.width: Tokens.sizes.bar.windowPreviewSize * 2
+                constraintSize.height: Tokens.sizes.bar.windowPreviewSize * 2
             }
         }
     }

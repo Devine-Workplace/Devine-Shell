@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import Quickshell.Io
 import Devine
 import Devine.Config
@@ -62,10 +63,14 @@ PageBase {
                 width: parent.width - Tokens.padding.largeIncreased * 2
                 spacing: Tokens.spacing.small
 
-                AnimatedLogo {
+                Image {
                     Layout.alignment: Qt.AlignHCenter
-                    Layout.preferredWidth: implicitWidth
-                    Layout.preferredHeight: implicitHeight
+                    Layout.preferredWidth: 96
+                    Layout.preferredHeight: 96
+                    source: SysInfo.osLogo
+                    fillMode: Image.PreserveAspectFit
+                    asynchronous: true
+                    mipmap: true
                 }
 
                 StyledText {

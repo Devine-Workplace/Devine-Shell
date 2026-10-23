@@ -4,6 +4,8 @@ import QtQuick
 import Quickshell
 import Devine.Config
 import qs.components
+import qs.services
+import qs.utils
 import qs.modules.bar.popouts // Need to import this module so the Wrapper type is the same as others
 
 StyledClippingRect {
@@ -16,7 +18,10 @@ StyledClippingRect {
     required property real barHeight
 
     readonly property bool pointerHovered: pointerHover.hovered
-    HoverHandler { id: pointerHover; blocking: false }
+    HoverHandler {
+        id: pointerHover
+        blocking: false
+    }
     readonly property alias content: content
     readonly property real revealProgress: Math.max(0, Math.min(1, 1 - offsetScale))
     property real offsetScale: 1
@@ -28,13 +33,19 @@ StyledClippingRect {
     Connections {
         target: content
         function onHasCurrentChanged() {
-            if (content.hasCurrent && root.offsetScale >= 1) reveal.restart();
-            else { reveal.stop(); root.offsetScale = content.hasCurrent || content.isDetached ? 0 : 1; }
+            if (content.hasCurrent && root.offsetScale >= 1)
+                reveal.restart();
+            else {
+                reveal.stop();
+                root.offsetScale = content.hasCurrent || content.isDetached ? 0 : 1;
+            }
         }
-        function onIsDetachedChanged() { reveal.restart(); }
+        function onIsDetachedChanged() {
+            reveal.restart();
+        }
     }
 
-    visible: width > 0 && height > 0
+    visible: width > 0 && height > 0 && !(ShellState.componentsFor(screen)?.switcherPanel?.switching ?? false)
     clip: true
 
     implicitWidth: content.implicitWidth
@@ -42,7 +53,16 @@ StyledClippingRect {
     implicitHeight: content.implicitHeight * revealProgress + barExtension
 
     readonly property real anchorWidth: content.currentName === "workspaces" && content.workspaceBaseWidth > 0 ? content.workspaceBaseWidth : width
-    x: content.isDetached ? (parent.width - content.nonAnimWidth) / 2 : Math.max(0, Math.min(parent.width - width, content.currentCenter - borderThickness - anchorWidth / 2))
+    x: {
+        if ((content.isDetached && content.detachedMode === "clipboard") || content.clipboardClosing) {
+            if (content.clipboardPinnedSide === "left")
+                return borderThickness + Tokens.padding.medium;
+            return parent.width - width - borderThickness - Tokens.padding.medium;
+        }
+        if (content.isDetached)
+            return (parent.width - content.nonAnimWidth) / 2;
+        return Math.max(0, Math.min(parent.width - width, content.currentCenter - borderThickness - anchorWidth / 2));
+    }
     y: {
         if (content.isDetached)
             return (parent.height - content.nonAnimHeight) / 2;
@@ -55,7 +75,7 @@ StyledClippingRect {
     }
 
     Behavior on x {
-        enabled: content.isDetached
+        enabled: content.isDetached || content.clipboardClosing
         Anim {
             duration: content.animLength
             easing: content.animCurve
@@ -63,7 +83,7 @@ StyledClippingRect {
     }
 
     Behavior on y {
-        enabled: content.isDetached
+        enabled: content.isDetached || content.clipboardClosing
 
         Anim {
             duration: content.animLength

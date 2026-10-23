@@ -143,6 +143,22 @@ QtObject {
             }
         },
         Component {
+            // Keyboard shortcuts
+            StackPage {
+                Component {
+                    KeybindsPage {}
+                }
+            }
+        },
+        Component {
+            // Clipboard
+            StackPage {
+                Component {
+                    ClipboardPage {}
+                }
+            }
+        },
+        Component {
             // Apps
             StackPage {
                 Component {

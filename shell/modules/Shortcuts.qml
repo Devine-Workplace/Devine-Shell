@@ -5,6 +5,7 @@ import Devine
 import qs.components.misc
 import qs.services
 import qs.modules.nexus
+import qs.modules.explorer
 
 Scope {
     id: root
@@ -16,7 +17,7 @@ Scope {
     CustomShortcut {
         // qmllint enable unresolved-type
         name: "nexus"
-        description: "Open nexus"
+        description: "Open Devine settings"
         onPressed: WindowFactory.create()
     }
 
@@ -108,11 +109,54 @@ Scope {
         }
     }
 
+    // qmllint disable unresolved-type
+    CustomShortcut {
+        // qmllint enable unresolved-type
+        name: "clipboard"
+        description: "Open clipboard history"
+        onPressed: {
+            const c = ShellState.componentsForActive();
+            c?.panels?.popouts?.openClipboard(false);
+        }
+    }
+
+    CustomShortcut {
+        name: "explorer"
+        description: "Open Devine explorer"
+        onPressed: ExplorerFactory.open()
+    }
+
+    IpcHandler {
+        target: "locks"
+        function showCapsLock(enabled: bool): void {
+            for (const screen of Screens.screens)
+                ShellState.componentsFor(screen)?.panels?.capsLockIndicator?.show(enabled);
+        }
+        function status(): string {
+            return JSON.stringify(Screens.screens.map(screen => {
+                const p = ShellState.componentsFor(screen)?.panels?.capsLockIndicator;
+                return {
+                    screen: screen.name,
+                    capsLock: Hypr.capsLock,
+                    shiftLock: Hypr.shiftLockEnabled,
+                    keyEvents: Hypr.capsLockKeyEvents,
+                    x: p?.x,
+                    y: p?.y,
+                    width: p?.width,
+                    height: p?.height,
+                    visible: p?.visible,
+                    progress: p?.morphProgress
+                };
+            }));
+        }
+    }
+
     IpcHandler {
         function open(): void {
             const c = ShellState.componentsForActive();
             const button = c?.find("taskbarWorkspaces", c.bar);
-            if (button) button.showMenu();
+            if (button)
+                button.showMenu();
         }
 
         target: "workspaces"
@@ -122,7 +166,11 @@ Scope {
         function calendar(open: bool): void {
             const c = ShellState.componentsForActive();
             const popout = c.panels.popouts;
-            if (!open) { if (popout.currentName === "calendar") popout.hasCurrent = false; return; }
+            if (!open) {
+                if (popout.currentName === "calendar")
+                    popout.hasCurrent = false;
+                return;
+            }
             const clock = c.find("taskbarClock", c.bar);
             popout.currentCenter = clock ? clock.mapToItem(c.bar, clock.width / 2, 0).x : c.bar.width / 2;
             popout.currentName = "calendar";
@@ -160,6 +208,28 @@ Scope {
         }
 
         target: "nexus"
+    }
+
+    IpcHandler {
+        function open(): void {
+            ExplorerFactory.open();
+        }
+
+        target: "files"
+    }
+
+    IpcHandler {
+        function open(): void {
+            const c = ShellState.componentsForActive();
+            c?.panels?.popouts?.openClipboard(false);
+        }
+
+        function deleteHistory(): void {
+            const c = ShellState.componentsForActive();
+            c?.panels?.popouts?.openClipboard(true);
+        }
+
+        target: "clipboard"
     }
 
     IpcHandler {

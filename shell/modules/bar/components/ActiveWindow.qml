@@ -11,6 +11,7 @@ Item {
     required property var bar
     required property Brightness.Monitor monitor
     property color colour: Colours.palette.m3primary
+    opacity: 1 - Math.max(0, Math.min(1, (ShellState.componentsFor(bar.screen)?.switcherPanel?.morphProgress ?? 0) * 5))
     readonly property string windowTitle: {
         const active = Hypr.activeToplevel;
         const title = active?.title || active?.lastIpcObject?.title;

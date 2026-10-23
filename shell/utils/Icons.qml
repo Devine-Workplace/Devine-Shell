@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Services.Notifications
 import Devine.Config
+import qs.utils
 
 Singleton {
     id: root
@@ -141,6 +142,8 @@ Singleton {
     }
 
     function getAppIcon(name: string, fallback: string): string {
+        if (name === "org.quickshell" || name === "quickshell")
+            return SysInfo.osLogo || Quickshell.iconPath("computer");
         const icon = DesktopEntries.heuristicLookup(name)?.icon;
         if (fallback !== "undefined")
             return Quickshell.iconPath(icon, fallback);

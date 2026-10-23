@@ -87,7 +87,7 @@ Scope {
             root.activeAsync = false;
         }
         function open(): void {
-            root.freeze = false;
+            root.freeze = true;
             root.closing = false;
             root.clipboardOnly = false;
             pickerScope.prepare();
@@ -101,7 +101,7 @@ Scope {
         }
 
         function openClip(): void {
-            root.freeze = false;
+            root.freeze = true;
             root.closing = false;
             root.clipboardOnly = true;
             pickerScope.prepare();
@@ -123,7 +123,7 @@ Scope {
         name: "screenshot"
         description: "Open screenshot tool"
         onPressed: {
-            root.freeze = false;
+            root.freeze = true;
             root.closing = false;
             root.clipboardOnly = false;
             pickerScope.prepare();
@@ -149,7 +149,7 @@ Scope {
         name: "screenshotClip"
         description: "Open screenshot tool (clipboard)"
         onPressed: {
-            root.freeze = false;
+            root.freeze = true;
             root.closing = false;
             root.clipboardOnly = true;
             pickerScope.prepare();

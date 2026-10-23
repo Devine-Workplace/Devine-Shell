@@ -30,7 +30,9 @@ Singleton {
     readonly property int activeWsId: focusedWorkspace?.id ?? 1
 
     readonly property HyprKeyboard keyboard: extras.devices.keyboards.find(kb => kb.main) ?? null
-    readonly property bool capsLock: keyboard?.capsLock ?? false
+    property bool shiftLockEnabled: false
+    property int capsLockKeyEvents: 0
+    readonly property bool capsLock: (keyboard?.capsLock ?? false) || shiftLockEnabled
     readonly property bool numLock: keyboard?.numLock ?? false
     readonly property string defaultKbLayout: keyboard?.layout.split(",")[0] ?? "??"
     readonly property string kbLayoutFull: keyboard?.activeKeymap ?? Tr.trCtx("Unknown", "keyboard layout")
@@ -117,14 +119,65 @@ Singleton {
     }
 
     function reloadDynamicConfs(): void {
+        const keyBindings = [Keybinds.switcher, Keybinds.switcherBack, Keybinds.overview, Keybinds.launcher, Keybinds.settings, Keybinds.screenshot, Keybinds.clipboard, Keybinds.explorer];
+        const legacyBindings = keyBindings.map(toHyprBinding);
+        const oldKeyBindings = root.lastDevineBindings;
         if (usingLua) {
-            extras.batchMessage(['eval hl.bind("Caps_Lock", hl.dsp.global("devine:refreshDevices"), { locked = true, non_consuming = true, ignore_mods = true, release = true })', 'eval hl.bind("Num_Lock", hl.dsp.global("devine:refreshDevices"), { locked = true, non_consuming = true, ignore_mods = true, release = true })']);
+            extras.batchMessage([...[...new Set([...oldKeyBindings, ...keyBindings, "ALT + Tab", "ALT + SHIFT + Tab", "SUPER + Tab", "SUPER + Space", "SUPER + Z", "SUPER + SHIFT + S", "SUPER + V", "SUPER + E", "Caps_Lock", "Num_Lock", "Shift_Lock", "code:66"])].map(k => `eval hl.unbind("${k}")`), 'eval hl.bind("Num_Lock", hl.dsp.global("devine:refreshDevices"), { locked = true, non_consuming = true, ignore_mods = true, release = true })', 'eval hl.bind("code:66", hl.dsp.global("devine:capsLockKey"), { locked = true, non_consuming = true, ignore_mods = true })', `eval hl.bind("${Keybinds.switcher}", hl.dsp.global("devine:switcherNext"))`, `eval hl.bind("${Keybinds.switcherBack}", hl.dsp.global("devine:switcherPrevious"))`, `eval hl.bind("${Keybinds.overview}", hl.dsp.global("devine:switcherOverview"))`, `eval hl.bind("${Keybinds.launcher}", hl.dsp.global("devine:launcher"))`, `eval hl.bind("${Keybinds.settings}", hl.dsp.global("devine:nexus"))`, `eval hl.bind("${Keybinds.screenshot}", hl.dsp.global("devine:screenshot"))`, `eval hl.bind("${Keybinds.clipboard}", hl.dsp.global("devine:clipboard"))`, `eval hl.bind("${Keybinds.explorer}", hl.dsp.global("devine:explorer"))`]);
         } else {
-            extras.batchMessage(["keyword bindlni ,Caps_Lock,global,devine:refreshDevices", "keyword bindlni ,Num_Lock,global,devine:refreshDevices"]);
+            extras.batchMessage([...[...new Set([...oldKeyBindings.map(toHyprBinding), ...legacyBindings, "ALT,Tab", "ALT SHIFT,Tab", "SUPER,Tab", "SUPER,Space", "SUPER,Z", "SUPER SHIFT,S", "SUPER,V", "SUPER,E", ",Caps_Lock", ",Num_Lock", ",Shift_Lock", ",code:66"])].map(k => `keyword unbind ${k}`), "keyword bindlni ,Num_Lock,global,devine:refreshDevices", "keyword bindlni ,code:66,global,devine:capsLockKey", `keyword bind ${legacyBindings[0]},global,devine:switcherNext`, `keyword bind ${legacyBindings[1]},global,devine:switcherPrevious`, `keyword bind ${legacyBindings[2]},global,devine:switcherOverview`, `keyword bind ${legacyBindings[3]},global,devine:launcher`, `keyword bind ${legacyBindings[4]},global,devine:nexus`, `keyword bind ${legacyBindings[5]},global,devine:screenshot`, `keyword bind ${legacyBindings[6]},global,devine:clipboard`, `keyword bind ${legacyBindings[7]},global,devine:explorer`]);
         }
+        root.lastDevineBindings = keyBindings;
     }
 
+    function toHyprBinding(binding: string): string {
+        const parts = binding.split("+").map(p => p.trim());
+        const key = parts.pop() ?? "";
+        return `${parts.join(" ")},${key}`;
+    }
+
+    property var lastDevineBindings: ["ALT + Tab", "ALT + SHIFT + Tab", "SUPER + Tab", "SUPER + Space", "SUPER + Z", "SUPER + SHIFT + S", "SUPER + V", "SUPER + E"]
+
     onUsingLuaChanged: reloadDynamicConfs()
+    Connections {
+        target: Keybinds
+        function onLoadingChanged(): void {
+            if (!Keybinds.loading)
+                Hypr.reloadDynamicConfs();
+        }
+        function onSwitcherChanged(): void {
+            if (!Keybinds.loading)
+                Hypr.reloadDynamicConfs();
+        }
+        function onSwitcherBackChanged(): void {
+            if (!Keybinds.loading)
+                Hypr.reloadDynamicConfs();
+        }
+        function onOverviewChanged(): void {
+            if (!Keybinds.loading)
+                Hypr.reloadDynamicConfs();
+        }
+        function onLauncherChanged(): void {
+            if (!Keybinds.loading)
+                Hypr.reloadDynamicConfs();
+        }
+        function onSettingsChanged(): void {
+            if (!Keybinds.loading)
+                Hypr.reloadDynamicConfs();
+        }
+        function onScreenshotChanged(): void {
+            if (!Keybinds.loading)
+                Hypr.reloadDynamicConfs();
+        }
+        function onExplorerChanged(): void {
+            if (!Keybinds.loading)
+                Hypr.reloadDynamicConfs();
+        }
+        function onClipboardChanged(): void {
+            if (!Keybinds.loading)
+                Hypr.reloadDynamicConfs();
+        }
+    }
     Component.onCompleted: {
         reloadDynamicConfs();
         Hyprland.refreshMonitors();
@@ -227,6 +280,37 @@ Singleton {
         description: "Reload devices"
         onPressed: extras.refreshDevices()
         onReleased: extras.refreshDevices()
+    }
+
+    CustomShortcut {
+        name: "capsLockKey"
+        description: "Update Caps Lock indicator"
+        onPressed: {
+            root.capsLockKeyEvents++;
+            if (root.keyboard?.lastIpcObject?.options?.includes("caps:shiftlock")) {
+                root.shiftLockEnabled = !root.shiftLockEnabled;
+                shiftLockState.setText(JSON.stringify({
+                    enabled: root.shiftLockEnabled
+                }));
+            }
+            lockRefresh.restart();
+        }
+    }
+
+    Timer {
+        id: lockRefresh
+        interval: 40
+        onTriggered: extras.refreshDevices()
+    }
+
+    FileView {
+        id: shiftLockState
+        path: Quickshell.env("XDG_RUNTIME_DIR") + "/devine-shift-lock.json"
+        onLoaded: {
+            try {
+                root.shiftLockEnabled = JSON.parse(text()).enabled === true;
+            } catch (e) {}
+        }
     }
 
     HyprExtras {

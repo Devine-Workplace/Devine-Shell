@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SOURCE="$(readlink -f -- "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(cd -- "$(dirname -- "$SOURCE")" && pwd -P)"
+ROOT_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
+RUNTIME_DIR="${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}}"
+RESULT_FILE="$(mktemp "$RUNTIME_DIR/devine-share-picker.XXXXXX")"
+ATTEMPT_LOG="$(mktemp "$RUNTIME_DIR/devine-share-picker-log.XXXXXX")"
+LOG_FILE="$RUNTIME_DIR/devine-share-picker.log"
+trap 'rm -f -- "$RESULT_FILE" "$ATTEMPT_LOG"' EXIT
+
+printf '\n[%s] Devine picker requested (args: %s)\n' "$(date --iso-8601=seconds)" "$*" >>"$LOG_FILE"
+
+exec 9>"$RUNTIME_DIR/devine-share-picker.lock"
+if ! flock -n 9; then
+  printf 'A Devine share picker is already open.\n' >&2
+  exit 1
+fi
+
+export QML2_IMPORT_PATH="$HOME/.local/lib/qt6/qml${QML2_IMPORT_PATH:+:$QML2_IMPORT_PATH}"
+export DEVINE_LIB_DIR="$HOME/.local/lib/devine"
+export DEVINE_PICKER_RESULT_FILE="$RESULT_FILE"
+
+set +e
+timeout 180s qs --no-duplicate -p "$ROOT_DIR/shell/share-picker.qml" >"$ATTEMPT_LOG" 2>&1
+picker_status=$?
+set -e
+
+cat -- "$ATTEMPT_LOG" >>"$LOG_FILE"
+
+if [[ -s "$RESULT_FILE" ]]; then
+  selection="$(<"$RESULT_FILE")"
+  if [[ "$selection" == "__CANCEL__" ]]; then
+    exit 1
+  fi
+  if [[ "$selection" =~ ^\[SELECTION\]r?/(screen:[^[:space:]]+|window:[0-9]+|region:[^[:space:]]+)$ ]]; then
+    printf '%s\n' "$selection"
+    exit 0
+  fi
+fi
+
+if (( picker_status == 124 )); then
+  printf 'Devine share picker timed out.\n' >&2
+else
+  tail -n 20 "$ATTEMPT_LOG" >&2
+fi
+
+# If Quickshell failed before showing Devine's picker, preserve screen sharing
+# by handing the request to the stock picker. An explicit cancel never falls
+# through to another dialog.
+if command -v hyprland-share-picker >/dev/null 2>&1; then
+  printf '[%s] Falling back to hyprland-share-picker (status %s).\n' "$(date --iso-8601=seconds)" "$picker_status" >>"$LOG_FILE"
+  hyprland-share-picker "$@"
+  exit $?
+fi
+exit 1

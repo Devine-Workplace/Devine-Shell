@@ -99,6 +99,13 @@ StyledWindow {
             width: panels.osdWrapper.width * (1 - panels.osd.offsetScale) + root.borderThickness
             height: panels.osd.height
         }
+
+        Region {
+            x: panels.capsLockIndicator.x + bar.implicitWidth
+            y: panels.capsLockIndicator.y + root.borderThickness
+            width: panels.capsLockIndicator.width
+            height: panels.capsLockIndicator.height
+        }
     }
 
     Regions {
@@ -163,6 +170,17 @@ StyledWindow {
             smoothing: root.contentItem.Config.border.smoothing
         }
 
+        BlobRect {
+            readonly property var switcher: ShellState.componentsFor(root.screen)?.switcherPanel ?? null
+            group: blobGroup
+            x: switcher?.x ?? 0
+            y: switcher?.y ?? 0
+            implicitWidth: switcher?.switching ? switcher.width : 0
+            implicitHeight: switcher?.switching ? switcher.height : 0
+            radius: switcher?.radius ?? Tokens.rounding.extraLarge
+            deformScale: (0.2 * Config.appearance.deformScale) / 10000
+        }
+
         BlobInvertedRect {
             anchors.fill: parent
             anchors.margins: -50 // Make border thicker to smooth out bulge from closed drawers
@@ -217,6 +235,14 @@ StyledWindow {
         }
 
         PanelBg {
+            id: capsLockBg
+
+            group: panels.capsLockIndicator.visible ? blobGroup : null
+            panel: panels.capsLockIndicator
+            deformAmount: 0.1
+        }
+
+        PanelBg {
             id: notifsBg
 
             panel: panels.notifications
@@ -233,6 +259,7 @@ StyledWindow {
 
         PanelBg {
             id: popoutBg
+            readonly property bool switching: ShellState.componentsFor(root.screen)?.switcherPanel?.switching ?? false
             radius: Tokens.rounding.extraLarge
 
             // Extra width to prevent vertical movement deformation partially detaching panel from bar
@@ -242,8 +269,8 @@ StyledWindow {
             deformAmount: panels.popouts.isDetached ? 0.05 : panels.popouts.hasCurrent ? (panels.popouts.currentName === "workspaces" ? 0.2 : 0.15) : 0.1
             x: panels.popoutsWrapper.x + panels.popouts.x + bar.implicitWidth - panels.popouts.width * extraWidth
             y: panels.popoutsWrapper.y + panels.popouts.y + root.borderThickness
-            implicitWidth: panel.height > 0 ? panels.popouts.width * (1 + extraWidth) : 0
-            implicitHeight: panels.popouts.height
+            implicitWidth: !switching && panel.height > 0 ? panels.popouts.width * (1 + extraWidth) : 0
+            implicitHeight: switching ? 0 : panels.popouts.height
 
             Behavior on extraWidth {
                 Anim {}
@@ -287,6 +314,9 @@ StyledWindow {
             }
             osd.transform: Matrix4x4 {
                 matrix: osdBg.deformMatrix
+            }
+            capsLockIndicator.transform: Matrix4x4 {
+                matrix: capsLockBg.deformMatrix
             }
             notifications.transform: Matrix4x4 {
                 matrix: notifsBg.deformMatrix

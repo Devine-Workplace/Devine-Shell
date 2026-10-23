@@ -65,6 +65,18 @@ QtObject {
             category: "shell"
         },
         {
+            label: Tr.tr("Keyboard shortcuts"),
+            icon: "keyboard",
+            description: Tr.tr("Devine shortcuts and actions"),
+            category: "shell"
+        },
+        {
+            label: Tr.tr("Clipboard"),
+            icon: "content_paste",
+            description: Tr.tr("History, image previews, popup position"),
+            category: "shell"
+        },
+        {
             label: Tr.tr("Apps"),
             icon: "apps",
             description: Tr.tr("Default apps, favourites, hidden apps"),

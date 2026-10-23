@@ -17,28 +17,52 @@ Item {
     required property real popupRevealProgress
     required property real barHeight
     readonly property var monitor: Hypr.monitorFor(screen)
-    readonly property var desktops: Hypr.workspaces.values.filter(w => !w.name.startsWith("special:") && w.monitor?.name === screen.name).sort((a,b) => a.id-b.id)
+    readonly property var desktops: Hypr.workspaces.values.filter(w => !w.name.startsWith("special:") && w.monitor?.name === screen.name).sort((a, b) => a.id - b.id)
     property var names: ({})
     property int previewDesktopId: -2147483648
     property bool previewExpanded: false
     property bool dragging: false
+    property bool creatingDesktop: false
+    property int contextDesktopId: -2147483648
+    property point contextPosition
+    property int pendingRemoveDesktopId: -2147483648
+    property int removeWindowCount: 0
+    property int removeDestinationId: -2147483648
+    property string actionError: ""
     property var dragWindow: null
     property var hoverDropTarget: null
-        readonly property var morphIconTarget: hoverDropTarget?.dropIconTarget ?? null
+    readonly property var morphIconTarget: hoverDropTarget?.dropIconTarget ?? null
     property real returnOffsetX: 0
     property real returnOffsetY: 0
     ParallelAnimation {
         id: returnMorph
-        NumberAnimation { target: root; property: "returnOffsetX"; to: 0; duration: 170; easing.type: Easing.OutCubic }
-        NumberAnimation { target: root; property: "returnOffsetY"; to: 0; duration: 170; easing.type: Easing.OutCubic }
+        NumberAnimation {
+            target: root
+            property: "returnOffsetX"
+            to: 0
+            duration: 170
+            easing.type: Easing.OutCubic
+        }
+        NumberAnimation {
+            target: root
+            property: "returnOffsetY"
+            to: 0
+            duration: 170
+            easing.type: Easing.OutCubic
+        }
     }
     property bool dropAnimating: false
     property var dropDesktop: null
     property point dropCenter
     property int dropLockedDesktopId: -2147483648
     readonly property var previewWindows: Hypr.toplevels.values.filter(w => w.workspace?.id === root.previewDesktopId && w.wayland)
-    readonly property string longestLabel: desktops.map(ws => names[String(ws.id)] ?? (ws.id > 0 ? "Desktop " + ws.id : ws.name)).sort((a,b) => b.length-a.length)[0] ?? "Desktop"
-    TextMetrics { id: nameMetrics; text: root.longestLabel; font: Tokens.font.body.small }
+    readonly property var contextWorkspace: desktops.find(w => w.id === contextDesktopId) ?? null
+    readonly property string longestLabel: desktops.map(ws => names[String(ws.id)] ?? (ws.id > 0 ? "Desktop " + ws.id : ws.name)).sort((a, b) => b.length - a.length)[0] ?? "Desktop"
+    TextMetrics {
+        id: nameMetrics
+        text: root.longestLabel
+        font: Tokens.font.body.small
+    }
     readonly property real listWidth: Math.min(240, Math.max(190, Math.ceil(nameMetrics.advanceWidth) + 96))
     readonly property bool previewVisible: previewExpanded
     readonly property real previewBottomInset: Math.max(0, (barHeight - 32) / 2)
@@ -46,37 +70,98 @@ Item {
     implicitHeight: leftColumn.implicitHeight
 
     function showPreview(id: int): void {
-        if (dragging || dropAnimating || windowMove.running || dropLockedDesktopId === id) return;
-        if (previewDesktopId !== id) previewList.contentY = 0;
+        if (dragging || dropAnimating || windowMove.running || dropLockedDesktopId === id)
+            return;
+        if (previewDesktopId !== id)
+            previewList.contentY = 0;
         previewDesktopId = id;
         previewExpanded = true;
     }
 
     function moveWindow(window, desktop): void {
-        if (!window || windowMove.running) return;
+        if (!window || windowMove.running)
+            return;
         const address = window.lastIpcObject.address ?? window.address;
-        if (!address || window.workspace?.id === desktop.id) return;
+        if (!address || window.workspace?.id === desktop.id)
+            return;
         const target = desktop.id < 0 ? "name:" + desktop.name : String(desktop.id);
         dropLockedDesktopId = desktop.id;
         windowMove.command = ["python3", Paths.scripts + "/move-window.py", address, target];
         windowMove.running = true;
     }
 
-    Process { id: windowMove }
+    Process {
+        id: windowMove
+    }
+
+    Process {
+        id: createDesktopProcess
+        command: ["python3", Paths.scripts + "/desktop-control.py", "create", root.screen.name]
+        onRunningChanged: root.creatingDesktop = running
+    }
+
+    function runDesktopAction(args: list<string>): void {
+        if (desktopAction.running)
+            return;
+        actionError = "";
+        desktopAction.command = ["python3", Paths.scripts + "/desktop-control.py", ...args];
+        desktopAction.running = true;
+    }
+
+    Process {
+        id: desktopAction
+        property int targetDesktopId: -2147483648
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const result = JSON.parse(text);
+                    if (result.confirmationRequired) {
+                        root.pendingRemoveDesktopId = desktopAction.targetDesktopId;
+                        root.removeWindowCount = result.count;
+                        root.removeDestinationId = result.destination;
+                    } else if (!result.ok) {
+                        root.actionError = result.error ?? "Could not update this desktop.";
+                    } else {
+                        root.contextDesktopId = -2147483648;
+                        root.pendingRemoveDesktopId = -2147483648;
+                    }
+                } catch (e) {
+                    root.actionError = "Could not update this desktop.";
+                }
+            }
+        }
+        onExited: {
+            if (exitCode !== 0 && !root.actionError)
+                root.actionError = "Could not update this desktop.";
+        }
+    }
+
+    function pinDesktop(workspace): void {
+        desktopAction.targetDesktopId = workspace.id;
+        runDesktopAction([workspace.lastIpcObject?.ispersistent ? "unpin" : "pin", String(workspace.id)]);
+    }
+
+    function removeDesktop(workspaceId: int, confirmed = false): void {
+        desktopAction.targetDesktopId = workspaceId;
+        const args = [String(workspaceId)];
+        if (confirmed)
+            args.push("--confirmed");
+        runDesktopAction(args);
+    }
 
     function absorbWindow(window, desktop, target): void {
-        if (!window || (window.workspace?.id ?? window.lastIpcObject?.workspace?.id) === desktop.id) return;
+        if (!window || (window.workspace?.id ?? window.lastIpcObject?.workspace?.id) === desktop.id)
+            return;
         root.moveWindow(window, desktop);
         hoverDropTarget = null;
     }
-
-
 
     Item {
         id: dragGhost
         property var draggedToplevel: root.dragWindow
         property point pointerOffset
-        width: previewList.width; height: 76
+        width: previewList.width
+        height: 76
         Drag.active: root.dragging
         Drag.source: dragGhost
         Drag.keys: ["devine-window"]
@@ -95,11 +180,29 @@ Item {
         opacity: 1
         color: root.hoverDropTarget ? "transparent" : Colours.palette.m3surfaceContainerHigh
         border.width: 0
-        Behavior on x { enabled: root.morphIconTarget !== null; Anim {} }
-        Behavior on y { enabled: root.morphIconTarget !== null; Anim {} }
-        Behavior on width { Anim { type: Anim.FastSpatial } }
-        Behavior on height { Anim { type: Anim.FastSpatial } }
-        Behavior on radius { Anim { type: Anim.FastSpatial } }
+        Behavior on x {
+            enabled: root.morphIconTarget !== null
+            Anim {}
+        }
+        Behavior on y {
+            enabled: root.morphIconTarget !== null
+            Anim {}
+        }
+        Behavior on width {
+            Anim {
+                type: Anim.FastSpatial
+            }
+        }
+        Behavior on height {
+            Anim {
+                type: Anim.FastSpatial
+            }
+        }
+        Behavior on radius {
+            Anim {
+                type: Anim.FastSpatial
+            }
+        }
         StyledClippingRect {
             x: root.hoverDropTarget ? (dragVisual.width - 12) / 2 : 8
             y: root.hoverDropTarget ? (dragVisual.height - 12) / 2 : 8
@@ -107,11 +210,31 @@ Item {
             height: root.hoverDropTarget ? 12 : 60
             radius: root.hoverDropTarget ? 4 : 8
             color: root.hoverDropTarget ? "transparent" : Colours.palette.m3surfaceContainerLowest
-            Behavior on x { Anim { type: Anim.FastSpatial } }
-            Behavior on y { Anim { type: Anim.FastSpatial } }
-            Behavior on width { Anim { type: Anim.FastSpatial } }
-            Behavior on height { Anim { type: Anim.FastSpatial } }
-            Behavior on radius { Anim { type: Anim.FastSpatial } }
+            Behavior on x {
+                Anim {
+                    type: Anim.FastSpatial
+                }
+            }
+            Behavior on y {
+                Anim {
+                    type: Anim.FastSpatial
+                }
+            }
+            Behavior on width {
+                Anim {
+                    type: Anim.FastSpatial
+                }
+            }
+            Behavior on height {
+                Anim {
+                    type: Anim.FastSpatial
+                }
+            }
+            Behavior on radius {
+                Anim {
+                    type: Anim.FastSpatial
+                }
+            }
             CachingIconImage {
                 anchors.centerIn: parent
                 implicitSize: 28
@@ -125,9 +248,14 @@ Item {
                 height: Math.min(parent.height - 4, sourceSize.height / Math.max(1, sourceSize.width) * (parent.width - 4))
                 captureSource: root.dragWindow?.wayland ?? null
                 live: root.dragging || root.dropAnimating
-                constraintSize.width: 188; constraintSize.height: 120
+                constraintSize.width: 376
+                constraintSize.height: 240
                 opacity: root.hoverDropTarget ? 0 : 1
-                Behavior on opacity { Anim { type: Anim.FastEffects } }
+                Behavior on opacity {
+                    Anim {
+                        type: Anim.FastEffects
+                    }
+                }
             }
         }
         CachingIconImage {
@@ -136,12 +264,23 @@ Item {
             visible: root.dragging
             source: Icons.getAppIcon(root.dragWindow?.lastIpcObject.class ?? "", "application-x-executable")
             opacity: root.hoverDropTarget ? 1 : 0
-            Behavior on opacity { Anim { type: Anim.FastEffects } }
+            Behavior on opacity {
+                Anim {
+                    type: Anim.FastEffects
+                }
+            }
         }
         StyledText {
-            x: 112; y: 10; width: parent.width - 122; height: 56
+            x: 112
+            y: 10
+            width: parent.width - 122
+            height: 56
             opacity: root.hoverDropTarget ? 0 : 1
-            Behavior on opacity { Anim { type: Anim.FastEffects } }
+            Behavior on opacity {
+                Anim {
+                    type: Anim.FastEffects
+                }
+            }
             text: root.dragWindow?.title ?? ""
             elide: Text.ElideRight
             verticalAlignment: Text.AlignVCenter
@@ -150,7 +289,7 @@ Item {
             maximumLineCount: 3
             font: Tokens.font.body.small
         }
-        }
+    }
 
     Connections {
         target: root.popouts
@@ -172,7 +311,11 @@ Item {
         path: Paths.config + "/workspace-names.json"
         watchChanges: true
         onFileChanged: reload()
-        onLoaded: { try { root.names = JSON.parse(text()); } catch(e) {} }
+        onLoaded: {
+            try {
+                root.names = JSON.parse(text());
+            } catch (e) {}
+        }
     }
 
     Item {
@@ -186,7 +329,8 @@ Item {
             width: root.listWidth
             spacing: 4
             StyledText {
-                width: parent.width; height: 24
+                width: parent.width
+                height: 24
                 text: root.screen.name + " · " + root.desktops.length + (root.desktops.length === 1 ? " desktop" : " desktops")
                 color: Colours.palette.m3onSurfaceVariant
                 font: Tokens.font.body.small
@@ -200,18 +344,25 @@ Item {
                     readonly property var openWindows: Hypr.toplevels.values.filter(w => w.workspace?.id === modelData.id && w.wayland)
                     readonly property int count: openWindows.length
                     readonly property var dropIconTarget: dropIconSlot
-                    width: leftColumn.width; height: 34; radius: 12
+                    width: leftColumn.width
+                    height: 34
+                    radius: 12
                     color: desktopDrop.containsDrag ? Colours.palette.m3secondaryContainer : active ? Colours.palette.m3primary : hover.hovered ? Colours.palette.m3surfaceContainerHigh : "transparent"
                     border.width: desktopDrop.containsDrag ? 1 : 0
                     border.color: Colours.palette.m3primary
                     scale: root.hoverDropTarget === entry ? 1.04 : 1
-                    Behavior on scale { Anim {} }
-                    Behavior on color { CAnim {} }
+                    Behavior on scale {
+                        Anim {}
+                    }
+                    Behavior on color {
+                        CAnim {}
+                    }
                     HoverHandler {
                         id: hover
                     }
                     StyledText {
-                        x: 14; anchors.verticalCenter: parent.verticalCenter
+                        x: 14
+                        anchors.verticalCenter: parent.verticalCenter
                         width: parent.width - 96
                         text: root.names[String(entry.modelData.id)] ?? (entry.modelData.id > 0 ? "Desktop " + entry.modelData.id : entry.modelData.name)
                         color: entry.active ? Colours.palette.m3onPrimary : Colours.palette.m3onSurface
@@ -219,7 +370,11 @@ Item {
                         elide: Text.ElideRight
                     }
                     StyledText {
-                        anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
+                        anchors {
+                            right: parent.right
+                            rightMargin: 14
+                            verticalCenter: parent.verticalCenter
+                        }
                         visible: entry.count === 0 && root.hoverDropTarget !== entry
                         text: "Empty"
                         font.pixelSize: 11
@@ -227,39 +382,65 @@ Item {
                     }
                     Item {
                         id: windowIconStack
-                        anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
-                        width: 13; height: 27
+                        anchors {
+                            right: parent.right
+                            rightMargin: 12
+                            verticalCenter: parent.verticalCenter
+                        }
+                        width: 13
+                        height: 27
                         CachingIconImage {
                             x: 0
                             y: entry.count > 1 ? 0 : 7
                             implicitSize: 13
                             visible: entry.count > 0
                             source: Icons.getAppIcon(entry.openWindows[0]?.lastIpcObject.class ?? "", "application-x-executable")
-                            Behavior on y { Anim { type: Anim.FastSpatial } }
+                            Behavior on y {
+                                Anim {
+                                    type: Anim.FastSpatial
+                                }
+                            }
                         }
                         CachingIconImage {
-                            x: 0; y: 14
+                            x: 0
+                            y: 14
                             implicitSize: 13
                             visible: entry.count > 1 && root.hoverDropTarget !== entry
                             source: Icons.getAppIcon(entry.openWindows[1]?.lastIpcObject.class ?? "", "application-x-executable")
                             opacity: visible ? 1 : 0
-                            Behavior on opacity { Anim { type: Anim.FastEffects } }
+                            Behavior on opacity {
+                                Anim {
+                                    type: Anim.FastEffects
+                                }
+                            }
                         }
                         Item {
                             id: dropIconSlot
                             x: 0
                             y: entry.count === 0 ? 7 : 14
-                            width: 13; height: 13
+                            width: 13
+                            height: 13
                         }
                     }
                     MouseArea {
                         anchors.fill: parent
                         hoverEnabled: true
+                        acceptedButtons: Qt.LeftButton | Qt.RightButton
                         onEntered: root.showPreview(entry.modelData.id)
-                        onExited: if (root.dropLockedDesktopId === entry.modelData.id) root.dropLockedDesktopId = -2147483648
-                        onPositionChanged: if (root.previewDesktopId !== entry.modelData.id) root.showPreview(entry.modelData.id)
-                        onClicked: {
-                            if (root.dragging || root.dropAnimating || windowMove.running || root.dropLockedDesktopId === entry.modelData.id) return;
+                        onExited: if (root.dropLockedDesktopId === entry.modelData.id)
+                            root.dropLockedDesktopId = -2147483648
+                        onPositionChanged: if (root.previewDesktopId !== entry.modelData.id)
+                            root.showPreview(entry.modelData.id)
+                        onClicked: mouse => {
+                            if (mouse.button === Qt.RightButton) {
+                                const point = entry.mapToItem(root, mouse.x, mouse.y);
+                                root.contextPosition = Qt.point(point.x, point.y);
+                                root.contextDesktopId = entry.modelData.id;
+                                return;
+                            }
+                            if (root.dragging || root.dropAnimating || windowMove.running || root.dropLockedDesktopId === entry.modelData.id)
+                                return;
+                            root.contextDesktopId = -2147483648;
                             root.popouts.hasCurrent = false;
                             Hypr.focusWorkspace(entry.modelData.id);
                         }
@@ -269,7 +450,12 @@ Item {
                         anchors.fill: parent
                         keys: ["devine-window"]
                         enabled: root.dragging && root.dragWindow !== null && (root.dragWindow.workspace?.id ?? root.dragWindow.lastIpcObject?.workspace?.id) !== entry.modelData.id
-                        onEntered: { returnMorph.stop(); root.returnOffsetX = 0; root.returnOffsetY = 0; root.hoverDropTarget = entry; }
+                        onEntered: {
+                            returnMorph.stop();
+                            root.returnOffsetX = 0;
+                            root.returnOffsetY = 0;
+                            root.hoverDropTarget = entry;
+                        }
                         onExited: if (root.hoverDropTarget === entry) {
                             const visualPos = dragVisual.mapToItem(root, 0, 0);
                             root.returnOffsetX = visualPos.x - dragGhost.x;
@@ -279,7 +465,8 @@ Item {
                         }
                         onDropped: event => {
                             const window = event.source?.draggedToplevel ?? root.dragWindow;
-                            if (!window || (window.workspace?.id ?? window.lastIpcObject?.workspace?.id) === entry.modelData.id) return;
+                            if (!window || (window.workspace?.id ?? window.lastIpcObject?.workspace?.id) === entry.modelData.id)
+                                return;
                             root.absorbWindow(window, entry.modelData, entry);
                             event.acceptProposedAction();
                         }
@@ -287,20 +474,30 @@ Item {
                 }
             }
             Rectangle {
-                width: leftColumn.width; height: 32; radius: 12
+                width: leftColumn.width
+                height: 32
+                radius: 12
                 color: newHover.hovered ? Colours.palette.m3surfaceContainerHigh : "transparent"
-                HoverHandler { id: newHover }
-                StyledText { anchors.centerIn: parent; text: "+ New desktop"; color: Colours.palette.m3primary; font: Tokens.font.body.small }
+                HoverHandler {
+                    id: newHover
+                }
+                StyledText {
+                    anchors.centerIn: parent
+                    text: "+ New desktop"
+                    color: Colours.palette.m3primary
+                    font: Tokens.font.body.small
+                }
                 MouseArea {
                     anchors.fill: parent
+                    enabled: !root.creatingDesktop
                     onClicked: {
-                        root.popouts.hasCurrent = false;
-                        Quickshell.execDetached(["qs", "-c", "devine", "ipc", "call", "switcher", "createDesktop", root.screen.name]);
+                        createDesktopProcess.running = true;
                     }
                 }
             }
             StyledText {
-                width: leftColumn.width; height: 24
+                width: leftColumn.width
+                height: 24
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
                 text: "Manage all displays"
@@ -327,12 +524,20 @@ Item {
             implicitHeight: leftColumn.implicitHeight
             height: implicitHeight + 8 + root.barHeight
             opacity: visible ? 1 : 0
-            Behavior on opacity { Anim { duration: 140; type: Anim.Standard } }
+            Behavior on opacity {
+                Anim {
+                    duration: 140
+                    type: Anim.Standard
+                }
+            }
             clip: true
 
             StyledText {
                 id: header
-                x: 12; y: 10; width: parent.width - 24; height: 22
+                x: 12
+                y: 10
+                width: parent.width - 24
+                height: 22
                 text: {
                     const ws = root.desktops.find(d => d.id === root.previewDesktopId);
                     return ws ? (root.names[String(ws.id)] ?? (ws.id > 0 ? "Desktop " + ws.id : ws.name)) : "Desktop";
@@ -342,113 +547,296 @@ Item {
                 elide: Text.ElideRight
             }
             StyledClippingRect {
-                x: 10; y: 38
+                x: 10
+                y: 38
                 width: parent.width - 20
                 height: Math.max(24, parent.height - 38 - root.previewBottomInset)
                 radius: 12
 
-            Flickable {
-                id: previewList
-                anchors.fill: parent
-                clip: true
-                contentWidth: width
-                contentHeight: root.previewWindows.length ? windowsColumn.implicitHeight : emptyLabel.implicitHeight
-                boundsBehavior: Flickable.StopAtBounds
-                Controls.ScrollBar.vertical: Controls.ScrollBar {
-                    width: 4
-                    policy: Controls.ScrollBar.AsNeeded
-                    contentItem: Rectangle {
-                        implicitWidth: 3
-                        radius: 2
-                        color: Colours.palette.m3primary
+                Flickable {
+                    id: previewList
+                    anchors.fill: parent
+                    clip: true
+                    contentWidth: width
+                    contentHeight: root.previewWindows.length ? windowsColumn.implicitHeight : emptyLabel.implicitHeight
+                    boundsBehavior: Flickable.StopAtBounds
+                    Controls.ScrollBar.vertical: Controls.ScrollBar {
+                        width: 4
+                        policy: Controls.ScrollBar.AsNeeded
+                        contentItem: Rectangle {
+                            implicitWidth: 3
+                            radius: 2
+                            color: Colours.palette.m3primary
+                        }
+                        background: Item {}
                     }
-                    background: Item {}
-                }
-                Column {
-                    id: windowsColumn
-                    width: previewList.width
-                    spacing: 6
-                    Repeater {
-                        model: root.previewWindows
-                        delegate: Rectangle {
-                            id: windowRow
-                            required property var modelData
-                            width: windowsColumn.width; height: 76; radius: 12
-                            color: Colours.palette.m3surfaceContainerHigh
-                            opacity: (root.dragging || root.dropAnimating) && root.dragWindow === modelData ? 0.25 : 1
-                            Behavior on opacity { Anim { type: Anim.FastEffects } }
-                            Rectangle {
-                                x: 8; y: 8; width: 94; height: 60; radius: 8
-                                color: Colours.palette.m3surfaceContainerLowest
-                                clip: true
-                                CachingIconImage {
-                                    anchors.centerIn: parent
-                                    implicitSize: 28
-                                    visible: !windowCapture.hasContent
-                                    source: Icons.getAppIcon(windowRow.modelData.lastIpcObject.class ?? "", "application-x-executable")
+                    Column {
+                        id: windowsColumn
+                        width: previewList.width
+                        spacing: 6
+                        Repeater {
+                            model: root.previewWindows
+                            delegate: Rectangle {
+                                id: windowRow
+                                required property var modelData
+                                width: windowsColumn.width
+                                height: 76
+                                radius: 12
+                                color: Colours.palette.m3surfaceContainerHigh
+                                opacity: (root.dragging || root.dropAnimating) && root.dragWindow === modelData ? 0.25 : 1
+                                Behavior on opacity {
+                                    Anim {
+                                        type: Anim.FastEffects
+                                    }
                                 }
-                                ScreencopyView {
-                                    id: windowCapture
-                                    anchors.centerIn: parent
-                                    width: Math.min(parent.width - 4, (sourceSize.width / Math.max(1, sourceSize.height)) * (parent.height - 4))
-                                    height: Math.min(parent.height - 4, (sourceSize.height / Math.max(1, sourceSize.width)) * (parent.width - 4))
-                                    captureSource: windowRow.modelData.wayland
-                                    live: root.previewVisible && root.popouts.hasCurrent
-                                    constraintSize.width: 188
-                                    constraintSize.height: 120
+                                Rectangle {
+                                    x: 8
+                                    y: 8
+                                    width: 94
+                                    height: 60
+                                    radius: 8
+                                    color: Qt.rgba(Colours.palette.m3surfaceContainerLowest.r, Colours.palette.m3surfaceContainerLowest.g, Colours.palette.m3surfaceContainerLowest.b, 1)
+                                    clip: true
+                                    CachingIconImage {
+                                        anchors.centerIn: parent
+                                        implicitSize: 28
+                                        visible: !windowCapture.hasContent
+                                        source: Icons.getAppIcon(windowRow.modelData.lastIpcObject.class ?? "", "application-x-executable")
+                                    }
+                                    ScreencopyView {
+                                        id: windowCapture
+                                        anchors.centerIn: parent
+                                        width: Math.min(parent.width - 4, (sourceSize.width / Math.max(1, sourceSize.height)) * (parent.height - 4))
+                                        height: Math.min(parent.height - 4, (sourceSize.height / Math.max(1, sourceSize.width)) * (parent.width - 4))
+                                        captureSource: windowRow.modelData.wayland
+                                        live: root.previewVisible && root.popouts.hasCurrent
+                                        constraintSize.width: 376
+                                        constraintSize.height: 240
+                                    }
                                 }
-                            }
-                            StyledText {
-                                x: 112; y: 10; width: parent.width - 122; height: 56
-                                text: windowRow.modelData.title || DesktopEntries.heuristicLookup(windowRow.modelData.lastIpcObject.class ?? "")?.name || "Open window"
-                                color: Colours.palette.m3onSurface
-                                font: Tokens.font.body.small
-                                wrapMode: Text.Wrap
-                                elide: Text.ElideRight
-                                maximumLineCount: 3
-                            }
-                            MouseArea {
-                                id: windowDrag
-                                enabled: !root.dropAnimating && !windowMove.running
-                                anchors.fill: parent
-                                drag.target: dragGhost
-                                drag.threshold: 10
-                                drag.filterChildren: true
-                                preventStealing: true
-                                onPressed: event => {
-                                    root.dragWindow = windowRow.modelData;
-                                    root.hoverDropTarget = null; returnMorph.stop(); root.returnOffsetX = 0; root.returnOffsetY = 0;
-                                    const position = windowRow.mapToItem(root, 0, 0);
-                                    dragGhost.x = position.x;
-                                    dragGhost.y = position.y;
-                                    dragGhost.pointerOffset = Qt.point(event.x, event.y);
-                                    dragGhost.scale = 1;
-                                    dragGhost.opacity = 1;
-                                    dragGhost.width = previewList.width;
-                                    dragGhost.height = 76;
+                                StyledText {
+                                    x: 112
+                                    y: 10
+                                    width: parent.width - 122
+                                    height: 56
+                                    text: windowRow.modelData.title || DesktopEntries.heuristicLookup(windowRow.modelData.lastIpcObject.class ?? "")?.name || "Open window"
+                                    color: Colours.palette.m3onSurface
+                                    font: Tokens.font.body.small
+                                    wrapMode: Text.Wrap
+                                    elide: Text.ElideRight
+                                    maximumLineCount: 3
                                 }
-                                onPositionChanged: if (drag.active) root.dragging = true
-                                onReleased: {
-                                    if (root.dragging) dragGhost.Drag.drop();
-                                    root.dragging = false;
-                                    root.hoverDropTarget = null;
-                                    if (!root.dropAnimating) root.dragWindow = null;
+                                MouseArea {
+                                    id: windowDrag
+                                    enabled: !root.dropAnimating && !windowMove.running
+                                    anchors.fill: parent
+                                    drag.target: dragGhost
+                                    drag.threshold: 10
+                                    drag.filterChildren: true
+                                    preventStealing: true
+                                    onPressed: event => {
+                                        root.dragWindow = windowRow.modelData;
+                                        root.hoverDropTarget = null;
+                                        returnMorph.stop();
+                                        root.returnOffsetX = 0;
+                                        root.returnOffsetY = 0;
+                                        const position = windowRow.mapToItem(root, 0, 0);
+                                        dragGhost.x = position.x;
+                                        dragGhost.y = position.y;
+                                        dragGhost.pointerOffset = Qt.point(event.x, event.y);
+                                        dragGhost.scale = 1;
+                                        dragGhost.opacity = 1;
+                                        dragGhost.width = previewList.width;
+                                        dragGhost.height = 76;
+                                    }
+                                    onPositionChanged: if (drag.active)
+                                        root.dragging = true
+                                    onReleased: {
+                                        if (root.dragging)
+                                            dragGhost.Drag.drop();
+                                        root.dragging = false;
+                                        root.hoverDropTarget = null;
+                                        if (!root.dropAnimating)
+                                            root.dragWindow = null;
+                                    }
+                                    onCanceled: {
+                                        root.dragging = false;
+                                        if (!root.dropAnimating)
+                                            root.dragWindow = null;
+                                    }
                                 }
-                                onCanceled: { root.dragging = false; if (!root.dropAnimating) root.dragWindow = null; }
                             }
                         }
                     }
+                    StyledText {
+                        id: emptyLabel
+                        anchors.centerIn: parent
+                        visible: root.previewWindows.length === 0
+                        text: "No open windows"
+                        color: Colours.palette.m3onSurfaceVariant
+                        font: Tokens.font.body.small
+                    }
                 }
-                StyledText {
-                    id: emptyLabel
-                    anchors.centerIn: parent
-                    visible: root.previewWindows.length === 0
-                    text: "No open windows"
-                    color: Colours.palette.m3onSurfaceVariant
-                    font: Tokens.font.body.small
-                }
-            }
             }
         }
+    }
+
+    Item {
+        anchors.fill: parent
+        z: 1200
+        visible: root.contextDesktopId !== -2147483648 && root.pendingRemoveDesktopId === -2147483648
+        MouseArea {
+            anchors.fill: parent
+            onClicked: root.contextDesktopId = -2147483648
+        }
+        StyledRect {
+            x: Math.max(4, Math.min(parent.width - width - 4, root.contextPosition.x))
+            y: Math.max(4, Math.min(parent.height - height - 4, root.contextPosition.y))
+            width: 184
+            height: 76
+            radius: Tokens.rounding.large
+            color: Colours.palette.m3surfaceContainerHigh
+            border.width: 1
+            border.color: Colours.palette.m3outlineVariant
+            Rectangle {
+                x: 6
+                y: 6
+                width: parent.width - 12
+                height: 32
+                radius: Tokens.rounding.medium
+                color: pinHover.hovered ? Colours.palette.m3surfaceContainerHighest : "transparent"
+                HoverHandler { id: pinHover }
+                StyledText {
+                    anchors.fill: parent
+                    anchors.leftMargin: 12
+                    verticalAlignment: Text.AlignVCenter
+                    text: root.contextWorkspace?.lastIpcObject?.ispersistent ? "Unpin desktop" : "Pin desktop"
+                    color: Colours.palette.m3onSurface
+                    font: Tokens.font.body.small
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    enabled: !desktopAction.running && root.contextWorkspace !== null
+                    onClicked: {
+                        root.pinDesktop(root.contextWorkspace);
+                        root.contextDesktopId = -2147483648;
+                    }
+                }
+            }
+            Rectangle {
+                x: 6
+                y: 38
+                width: parent.width - 12
+                height: 32
+                radius: Tokens.rounding.medium
+                color: removeHover.hovered ? Colours.palette.m3errorContainer : "transparent"
+                HoverHandler { id: removeHover }
+                StyledText {
+                    anchors.fill: parent
+                    anchors.leftMargin: 12
+                    verticalAlignment: Text.AlignVCenter
+                    text: "Remove desktop"
+                    color: removeHover.hovered ? Colours.palette.m3onErrorContainer : Colours.palette.m3error
+                    font: Tokens.font.body.small
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    enabled: !desktopAction.running && root.contextWorkspace !== null
+                    onClicked: {
+                        root.removeDesktop(root.contextDesktopId);
+                        root.contextDesktopId = -2147483648;
+                    }
+                }
+            }
+        }
+    }
+
+    Item {
+        anchors.fill: parent
+        z: 1300
+        visible: root.pendingRemoveDesktopId !== -2147483648
+        MouseArea {
+            anchors.fill: parent
+        }
+        StyledRect {
+            anchors.centerIn: parent
+            width: Math.min(parent.width - 16, 320)
+            height: 142
+            radius: Tokens.rounding.extraLarge
+            color: Colours.palette.m3surfaceContainerHigh
+            border.width: 1
+            border.color: Colours.palette.m3outlineVariant
+            StyledText {
+                x: 20
+                y: 16
+                width: parent.width - 40
+                text: "Remove this desktop?"
+                color: Colours.palette.m3onSurface
+                font: Tokens.font.title.small
+            }
+            StyledText {
+                x: 20
+                y: 48
+                width: parent.width - 40
+                height: 42
+                text: root.removeWindowCount + " open window(s) will move to the nearest desktop."
+                color: Colours.palette.m3onSurfaceVariant
+                wrapMode: Text.WordWrap
+                font: Tokens.font.body.small
+            }
+            Rectangle {
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.rightMargin: 16
+                anchors.bottomMargin: 12
+                width: 78
+                height: 32
+                radius: Tokens.rounding.full
+                color: cancelHover.hovered ? Colours.palette.m3surfaceContainerHighest : "transparent"
+                HoverHandler { id: cancelHover }
+                StyledText {
+                    anchors.centerIn: parent
+                    text: "Cancel"
+                    color: Colours.palette.m3onSurface
+                    font: Tokens.font.body.small
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: root.pendingRemoveDesktopId = -2147483648
+                }
+            }
+            Rectangle {
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.rightMargin: 100
+                anchors.bottomMargin: 12
+                width: 108
+                height: 32
+                radius: Tokens.rounding.full
+                color: removeConfirmHover.hovered ? Colours.palette.m3error : Colours.palette.m3errorContainer
+                HoverHandler { id: removeConfirmHover }
+                StyledText {
+                    anchors.centerIn: parent
+                    text: desktopAction.running ? "Moving…" : "Move & remove"
+                    color: Colours.palette.m3onErrorContainer
+                    font: Tokens.font.body.small
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    enabled: !desktopAction.running
+                    onClicked: root.removeDesktop(root.pendingRemoveDesktopId, true)
+                }
+            }
+        }
+    }
+
+    StyledText {
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        z: 1400
+        visible: root.actionError.length > 0
+        text: root.actionError
+        color: Colours.palette.m3error
+        font: Tokens.font.body.small
     }
 }

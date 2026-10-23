@@ -38,6 +38,9 @@ Item {
 
     property string detachedMode
     property string queuedMode
+    property bool clipboardDeleteMode: false
+    property bool clipboardClosing: false
+    property string clipboardPinnedSide: "right"
 
     // Dummy object so Tokens attached prop resolves to global config
     // Anim configs are not per-monitor
@@ -52,8 +55,9 @@ Item {
     }
 
     function detach(mode: string): void {
+        clipboardClosing = false;
         setAnims(true);
-        if (mode === "winfo") {
+        if (mode === "winfo" || mode === "clipboard") {
             detachedMode = mode;
         } else {
             queuedMode = mode;
@@ -63,8 +67,15 @@ Item {
         focus = true;
     }
 
+    function openClipboard(deleteMode: bool): void {
+        clipboardDeleteMode = deleteMode;
+        clipboardPinnedSide = ClipboardSettings.popupSide;
+        detach("clipboard");
+    }
+
     function close(): void {
         hasCurrent = false;
+        clipboardClosing = clipboardClosing || detachedMode === "clipboard";
         detachedMode = "";
     }
 
@@ -135,6 +146,23 @@ Item {
         sourceComponent: WindowInfo {
             screen: root.screen
             client: Hypr.activeToplevel
+        }
+    }
+
+    Comp {
+        id: clipboard
+
+        shouldBeActive: root.detachedMode === "clipboard"
+        anchors.centerIn: parent
+
+        sourceComponent: Clipboard {
+            deleteMode: root.clipboardDeleteMode
+            onClosed: root.close()
+        }
+
+        onActiveChanged: {
+            if (!active)
+                root.clipboardClosing = false;
         }
     }
 

@@ -261,6 +261,7 @@ MouseArea {
 
         sourceComponent: ScreencopyView {
             captureSource: root.screen
+            live: false
 
             onHasContentChanged: {
                 if (hasContent && !root.loader.freeze) {

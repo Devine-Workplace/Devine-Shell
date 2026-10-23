@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Devine.Config
 import qs.components
+import qs.services
 import qs.modules.bar as Bar
 import qs.modules.dashboard as Dashboard
 import qs.modules.launcher as Launcher
@@ -33,11 +34,76 @@ Item {
     readonly property alias utilities: utilities
     readonly property alias toasts: toasts
     readonly property alias sidebar: sidebar
+    readonly property alias capsLockIndicator: capsLockIndicator
 
     anchors.fill: parent
     anchors.margins: borderThickness
     anchors.leftMargin: borderThickness
     anchors.bottomMargin: bar.implicitHeight
+
+    Item {
+        id: capsLockIndicator
+
+        property real offsetScale: 1
+        property bool displayCapsLock: false
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        // Retract the complete surface so its rounded lower edge cannot leave
+        // a small notch visible along the top of the screen.
+        anchors.topMargin: -implicitHeight * offsetScale
+        width: implicitWidth
+        height: implicitHeight
+        implicitWidth: contentRow.implicitWidth + Tokens.padding.largeIncreased * 2
+        implicitHeight: contentRow.implicitHeight + Tokens.padding.small * 2
+        opacity: 1 - offsetScale
+        visible: offsetScale < 1
+
+        Behavior on offsetScale {
+            Anim {}
+        }
+
+        Row {
+            id: contentRow
+
+            anchors.centerIn: parent
+            spacing: Tokens.spacing.small
+
+            MaterialIcon {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "keyboard_capslock"
+                color: Colours.palette.m3onSurface
+                fontStyle: Tokens.font.icon.medium
+                fill: 1
+            }
+
+            StyledText {
+                anchors.verticalCenter: parent.verticalCenter
+                text: capsLockIndicator.displayCapsLock ? "Caps Lock enabled" : "Caps Lock disabled"
+                color: Colours.palette.m3onSurface
+                font: Tokens.font.body.small
+            }
+        }
+
+        function show(enabled: bool): void {
+            displayCapsLock = enabled;
+            offsetScale = 0;
+            hideTimer.restart();
+        }
+
+        Connections {
+            target: Hypr
+            function onCapsLockChanged(): void {
+                capsLockIndicator.show(Hypr.capsLock);
+            }
+        }
+
+        Timer {
+            id: hideTimer
+
+            interval: 1400
+            onTriggered: capsLockIndicator.offsetScale = 1
+        }
+    }
 
     Item {
         id: osdWrapper
