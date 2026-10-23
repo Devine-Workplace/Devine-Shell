@@ -51,6 +51,14 @@ Singleton {
         Hyprland.dispatch(request);
     }
 
+    function syncWindowBorderColour(): void {
+        const colour = Colours.current.m3primary.toString().replace(/^#/, "").slice(0, 6);
+        if (usingLua)
+            extras.batchMessage([`eval hl.config({general={col={active_border="rgba(${colour}ff)"}}})`]);
+        else
+            extras.batchMessage([`keyword general:col.active_border rgb(${colour})`]);
+    }
+
     function focusWorkspace(ws: var): void {
         const workspace = workspaces.values.find(w => w.id === Number(ws) || w.name === String(ws));
         const selector = workspace && workspace.id < 0 ? (workspace.name.startsWith("special:") ? workspace.name : "name:" + workspace.name) : String(ws);
@@ -138,7 +146,21 @@ Singleton {
 
     property var lastDevineBindings: ["ALT + Tab", "ALT + SHIFT + Tab", "SUPER + Tab", "SUPER + Space", "SUPER + Z", "SUPER + SHIFT + S", "SUPER + V", "SUPER + E"]
 
-    onUsingLuaChanged: reloadDynamicConfs()
+    onUsingLuaChanged: {
+        reloadDynamicConfs();
+        syncWindowBorderColour();
+    }
+    Connections {
+        target: Colours.current
+        function onM3primaryChanged(): void {
+            Hypr.syncWindowBorderColour();
+        }
+    }
+    Timer {
+        id: borderColourReload
+        interval: 100
+        onTriggered: root.syncWindowBorderColour()
+    }
     Connections {
         target: Keybinds
         function onLoadingChanged(): void {
@@ -180,6 +202,7 @@ Singleton {
     }
     Component.onCompleted: {
         reloadDynamicConfs();
+        syncWindowBorderColour();
         Hyprland.refreshMonitors();
         Hyprland.refreshWorkspaces();
         Hyprland.refreshToplevels();
@@ -194,6 +217,7 @@ Singleton {
             if (n === "configreloaded") {
                 root.configReloaded();
                 root.reloadDynamicConfs();
+                borderColourReload.restart();
             } else if (["workspace", "moveworkspace", "activespecial", "focusedmon"].includes(n)) {
                 Hyprland.refreshWorkspaces();
                 Hyprland.refreshMonitors();

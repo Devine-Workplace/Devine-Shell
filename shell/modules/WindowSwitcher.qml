@@ -99,6 +99,10 @@ Scope {
     readonly property int desktopHeaderHeight: monitorColumn.implicitHeight + 36
     readonly property int overviewPanelWidth: 760
     readonly property int overviewPanelHeight: 520
+    readonly property int altTabCenterSlot: Math.max(0, Math.floor((windows.length - 1) / 2))
+    readonly property int altTabSlotCount: windows.length > 0
+        ? 1 + 2 * Math.max(altTabCenterSlot, windows.length - 1 - altTabCenterSlot)
+        : 1
     function windowsOnMonitor(monitorName): var {
         return Hypr.toplevels.values
             .filter(w => w.wayland && w.lastIpcObject?.mapped !== false && w.monitor?.name === monitorName)
@@ -683,7 +687,9 @@ Scope {
             id: panel
             property real morphProgress: root.opened ? 1 : 0
             readonly property bool switching: root.opened || morphProgress > 0
-            readonly property real expandedWidth: root.overview ? Math.min(root.targetScreen.width - 32, root.overviewPanelWidth) : Math.min(root.targetScreen.width - 32, root.columns * 236 + 24)
+            readonly property real expandedWidth: root.overview
+                ? Math.min(root.targetScreen.width - 32, root.overviewPanelWidth)
+                : Math.min(root.targetScreen.width - 32, root.altTabSlotCount * 236 + 24)
             readonly property real expandedHeight: root.overview ? Math.min(root.targetScreen.height - 32, root.overviewPanelHeight) : 244
             readonly property real expandedX: Math.max(16, Math.min(root.targetScreen.width - expandedWidth - 16, root.anchorX + root.anchorWidth / 2 - expandedWidth / 2))
             x: root.anchorX + (expandedX - root.anchorX) * morphProgress
@@ -914,6 +920,7 @@ Scope {
             }
             Flickable {
                 id: list
+                readonly property real switcherSideInset: root.overview ? 0 : Math.max(0, (width - 224) / 2 - 6)
                 visible: root.windows.length > 0
                 anchors {
                     left: parent.left
@@ -925,9 +932,10 @@ Scope {
                 anchors.topMargin: root.overview ? root.desktopHeaderHeight : 12
                 anchors.bottomMargin: root.overview ? 36 : 12
                 clip: true
-                contentWidth: root.overview ? width : Math.max(0, root.windows.length * 236 + 12)
+                contentWidth: root.overview ? width : Math.max(width, switcherSideInset * 2 + root.windows.length * 236 + 12)
                 contentHeight: root.overview ? Math.ceil(root.windows.length / root.columns) * 220 : height
-                contentX: root.overview ? 0 : Math.max(0, Math.min(contentWidth - width, 6 + root.selected * 236 - (width - 224) / 2))
+                readonly property int selectedCenterSlot: root.altTabCenterSlot
+                contentX: root.overview ? 0 : Math.max(0, Math.min(contentWidth - width, selectedCenterSlot * 236))
                 Behavior on contentX {
                     Anim {
                         duration: 220
@@ -941,7 +949,10 @@ Scope {
                         required property var modelData
                         required property int index
                         readonly property bool chosen: root.selected === index
-                        x: 6 + (root.overview ? index % root.columns : index) * 236
+                        readonly property int switcherIndex: root.overview
+                            ? index
+                            : (index - root.selected + list.selectedCenterSlot + root.windows.length) % root.windows.length
+                        x: list.switcherSideInset + 6 + (root.overview ? switcherIndex % root.columns : switcherIndex) * 236
                         y: 4 + (root.overview ? Math.floor(index / root.columns) * 220 : 0)
                         width: 224
                         height: 208
